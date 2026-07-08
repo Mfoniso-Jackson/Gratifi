@@ -1,0 +1,37 @@
+# Environment Variables
+
+`NEXT_PUBLIC_APP_URL`  
+Public URL used for QR codes and Stripe redirects.
+
+`NEXT_PUBLIC_SUPABASE_URL`  
+Supabase project URL.
+
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`  
+Supabase anon key for public reads.
+
+`SUPABASE_SERVICE_ROLE_KEY`  
+Server-only key for trusted writes.
+
+`STRIPE_SECRET_KEY`  
+Server-only Stripe API key.
+
+`STRIPE_WEBHOOK_SECRET`  
+Webhook signing secret used to verify Stripe events.
+
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`  
+Optional client key for future embedded payment UI.
+
+`MOONBEAM_RPC_URL`  
+Moonbeam or Moonbase RPC endpoint.
+
+`MOONBEAM_CHAIN_ID`  
+`1284` for Moonbeam, `1287` for Moonbase.
+
+`MOONBEAM_OPERATOR_PRIVATE_KEY`  
+Server-only private key authorised to write to `GratiFiProtocol`.
+
+`GRATIFI_PROTOCOL_CONTRACT_ADDRESS`  
+Deployed contract address.
+
+`MIN_TIP_AMOUNT_PENCE` / `MAX_TIP_AMOUNT_PENCE`  
+Server-side payment amount limits.
