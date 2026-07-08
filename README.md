@@ -20,6 +20,7 @@ Start here:
 - [`platform/docs/setup.md`](platform/docs/setup.md)
 - [`platform/docs/architecture.md`](platform/docs/architecture.md)
 - [`platform/docs/protocol.md`](platform/docs/protocol.md)
+- [`platform/docs/launch-checklist.md`](platform/docs/launch-checklist.md)
 
 ## License
 

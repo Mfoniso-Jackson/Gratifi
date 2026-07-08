@@ -44,6 +44,18 @@ pnpm test
 pnpm hardhat:test
 ```
 
+6. Check production environment coverage:
+
+```bash
+pnpm check:env
+```
+
+7. Seed a pilot venue after Supabase is configured:
+
+```bash
+pnpm seed:demo
+```
+
 ## Core Flow
 
 1. Customer scans a venue or worker QR code.
@@ -80,3 +92,7 @@ Admin pages live under `/admin`:
 - Protocol status
 
 Production deployments should enforce Supabase Auth middleware for `/admin` and admin API routes.
+
+## Deployment
+
+Use Vercel with the project root set to `platform`. The included `vercel.json` sets the install and build commands. See `docs/launch-checklist.md` for the remaining account-level setup.
