@@ -96,3 +96,16 @@ Production deployments should enforce Supabase Auth middleware for `/admin` and 
 ## Deployment
 
 Use Vercel with the project root set to `platform`. The included `vercel.json` sets the install and build commands. See `docs/launch-checklist.md` for the remaining account-level setup.
+
+## Pilot Operations
+
+The pilot playbook lives under `/admin/pilot` and supports venue onboarding, QR deployment, feedback capture, metrics export, and case-study generation.
+
+Operator docs:
+
+- `docs/pilot-setup-guide.md`
+- `docs/venue-onboarding-process.md`
+- `docs/qr-placement-guide.md`
+- `docs/staff-training-guide.md`
+- `docs/pilot-metrics-guide.md`
+- `docs/evidence-collection-guide.md`

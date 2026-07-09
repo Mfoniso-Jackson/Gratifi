@@ -8,6 +8,20 @@ export interface Venue {
   name: string;
   address: string | null;
   status: VenueStatus;
+  contact_name?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  venue_type?: "cafe" | "barbershop" | "pub" | "restaurant" | "other";
+  pilot_status?: "prospect" | "onboarded" | "live" | "paused" | "completed";
+  pilot_start_date?: string | null;
+  pilot_end_date?: string | null;
+  qr_placement_notes?: string | null;
+  staff_training_completed?: boolean;
+  owner_feedback?: string | null;
+  staff_feedback?: string | null;
+  customer_feedback?: string | null;
+  referral_source?: string | null;
+  follow_up_date?: string | null;
   created_at: string;
 }
 

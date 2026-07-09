@@ -15,6 +15,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const links = [
     ["/admin", "Overview"],
+    ["/admin/pilot", "Pilot"],
     ["/admin/venues", "Venues"],
     ["/admin/workers", "Workers"],
     ["/admin/events", "Events"],
