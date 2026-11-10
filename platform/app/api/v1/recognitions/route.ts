@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { PaymentService } from "@/lib/services/PaymentService";
 import { protocolError, protocolResponse } from "@/lib/services/ProtocolApiService";
 import { rateLimit } from "@/lib/services/rateLimit";
+import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
+import { isDemoMode } from "@/lib/demo/mode";
 
 export async function GET() {
   const db = createServiceClient();
@@ -20,6 +22,20 @@ export async function POST(request: Request) {
   const workerId = String(form.get("workerId"));
   const venueId = String(form.get("venueId"));
   const message = String(form.get("message") ?? "");
+
+  if (isDemoMode()) {
+    // Demo mode skips Stripe Checkout and records the recognition as if payment had settled.
+    const event = await new RecognitionEngine(createServiceClient()).createFromPaidIntent({
+      workerId,
+      venueId,
+      amountPence,
+      currency: "GBP",
+      message,
+      stripePaymentIntentId: `pi_demo_${crypto.randomUUID()}`,
+      stripeStatus: "paid"
+    });
+    return NextResponse.redirect(new URL(`/success?event=${event.id}`, request.url), 303);
+  }
 
   const session = await new PaymentService().createCheckoutSession({ workerId, venueId, amountPence, message });
   if (!session.url) return protocolError("Stripe did not return a checkout URL", 500);

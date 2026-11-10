@@ -109,3 +109,13 @@ Operator docs:
 - `docs/staff-training-guide.md`
 - `docs/pilot-metrics-guide.md`
 - `docs/evidence-collection-guide.md`
+
+## Demo mode
+
+To preview the whole app without Supabase, Stripe or Moonbeam, run it with sample data:
+
+```bash
+GRATIFI_DEMO_MODE=true pnpm dev
+```
+
+Then open `/v/demo-cafe` for the customer flow and `/admin` for the venue dashboard. Admin pages are open and payments are simulated, so never enable demo mode on a real deployment.

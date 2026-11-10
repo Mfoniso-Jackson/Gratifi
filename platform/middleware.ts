@@ -8,6 +8,8 @@ export async function middleware(request: NextRequest) {
   const isLogin = request.nextUrl.pathname.startsWith("/admin/login");
 
   if ((!isAdminPath && !isAdminApi) || isLogin) return response;
+  // Demo mode serves sample data only; admin pages are open so the product can be previewed.
+  if (process.env.GRATIFI_DEMO_MODE === "true") return response;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
