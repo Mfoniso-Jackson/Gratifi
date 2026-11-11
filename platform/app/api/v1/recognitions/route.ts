@@ -5,7 +5,7 @@ import { protocolError, protocolResponse } from "@/lib/services/ProtocolApiServi
 import { rateLimit } from "@/lib/services/rateLimit";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { isDemoMode } from "@/lib/demo/mode";
-import { applyDemoDreamMatch } from "@/lib/demo/dreams";
+import { applyDemoDreamTip } from "@/lib/demo/dreams";
 
 export async function GET() {
   const db = createServiceClient();
@@ -35,8 +35,10 @@ export async function POST(request: Request) {
       stripePaymentIntentId: `pi_demo_${crypto.randomUUID()}`,
       stripeStatus: "paid"
     });
-    const matched = await applyDemoDreamMatch(workerId, amountPence);
-    const query = matched > 0 ? `event=${event.id}&match=${matched}` : `event=${event.id}`;
+    const dreamTip = form.get("dreamLinked") === "on" ? await applyDemoDreamTip(workerId, amountPence) : null;
+    const query = dreamTip
+      ? `event=${event.id}&dream=1&match=${dreamTip.match}&before=${dreamTip.before}`
+      : `event=${event.id}`;
     return NextResponse.redirect(new URL(`/success?${query}`, request.url), 303);
   }
 

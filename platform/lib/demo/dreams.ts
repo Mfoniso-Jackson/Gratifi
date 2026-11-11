@@ -1,5 +1,6 @@
 import { isDemoMode } from "@/lib/demo/mode";
 import { createServiceClient } from "@/lib/supabase/server";
+import { dreamContribution } from "@/lib/demo/dreamMath";
 
 /**
  * Dream Fund mock-up. Dreams exist only in demo mode for now: there is no
@@ -27,16 +28,18 @@ export async function getDemoDream(workerId: string): Promise<Dream | null> {
   return (result.data as Dream | null) ?? null;
 }
 
-/** In "match" mode the sponsor matches each tip, up to what the dream still needs. Returns the matched amount. */
-export async function applyDemoDreamMatch(workerId: string, amountPence: number): Promise<number> {
+/**
+ * Records a dream-linked tip in demo mode: the customer's tip counts toward the dream and, in "match" mode,
+ * the sponsor matches it. The tip itself still goes to the worker in full. Returns the amounts added.
+ */
+export async function applyDemoDreamTip(workerId: string, amountPence: number) {
   const dream = await getDemoDream(workerId);
-  if (!dream || dream.mode !== "match") return 0;
-  const match = Math.min(amountPence, dream.target_pence - dream.funded_pence);
-  if (match <= 0) return 0;
-  const funded = dream.funded_pence + match;
+  if (!dream) return null;
+  const { fromTip, match, after } = dreamContribution(dream, amountPence);
+  if (fromTip + match <= 0) return null;
   await createServiceClient()
     .from("worker_dreams")
-    .update({ funded_pence: funded, status: funded >= dream.target_pence ? "funded" : "active" })
+    .update({ funded_pence: after, status: after >= dream.target_pence ? "funded" : "active" })
     .eq("id", dream.id);
-  return match;
+  return { fromTip, match, before: dream.funded_pence };
 }

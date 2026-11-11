@@ -4,16 +4,11 @@ import { Avatar, PublicShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { WorkerService } from "@/lib/services/WorkerService";
 import { DreamCard } from "@/components/DreamCard";
+import { DreamTipForm } from "@/components/DreamTipForm";
 import { getDemoDream } from "@/lib/demo/dreams";
 
 export const dynamic = "force-dynamic";
 
-const amounts = [
-  ["300", "£3"],
-  ["500", "£5"],
-  ["1000", "£10"],
-  ["2000", "£20"]
-];
 
 export default async function TipPage({ params }: { params: Promise<{ workerId: string }> }) {
   const { workerId } = await params;
@@ -45,43 +40,12 @@ export default async function TipPage({ params }: { params: Promise<{ workerId: 
           </div>
         )}
 
-        <form action="/api/v1/recognitions" method="post" className="mt-8 grid gap-6">
-          <input type="hidden" name="workerId" value={worker.data.id} />
-          <input type="hidden" name="venueId" value={worker.data.venue_id} />
-
-          <fieldset>
-            <legend className="text-sm font-medium">Choose an amount</legend>
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {amounts.map(([value, label]) => (
-                <label
-                  key={value}
-                  className="cursor-pointer rounded-xl bg-white py-3 text-center text-lg font-semibold ring-1 ring-ink/15 transition has-[:checked]:bg-ink has-[:checked]:text-white has-[:checked]:ring-ink has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-coral"
-                >
-                  <input type="radio" name="amountPence" value={value} defaultChecked={value === "500"} className="sr-only" />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <label className="grid gap-2">
-            <span className="text-sm font-medium">
-              Add a note <span className="font-normal text-ink/50">(optional)</span>
-            </span>
-            <textarea
-              name="message"
-              maxLength={280}
-              rows={3}
-              placeholder={`What did ${worker.data.display_name} do that made your day?`}
-              className="rounded-xl border border-ink/15 bg-white px-4 py-3 outline-none focus:border-ink/40"
-            />
-          </label>
-
-          <button className="rounded-full bg-coral px-5 py-4 text-lg font-semibold text-ink transition hover:bg-[#ff8a77]">
-            Continue to payment
-          </button>
-          <p className="-mt-2 text-center text-sm text-ink/50">Secure checkout with Stripe · No account needed</p>
-        </form>
+        <DreamTipForm
+          workerId={worker.data.id}
+          venueId={worker.data.venue_id}
+          workerName={worker.data.display_name}
+          dream={dream}
+        />
       </section>
     </PublicShell>
   );

@@ -18,11 +18,17 @@ async function loadDemoEvent(eventId: string | undefined) {
   return result.data as any;
 }
 
-export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ event?: string; match?: string }> }) {
-  const { event: eventId, match } = await searchParams;
-  const event = await loadDemoEvent(eventId);
+export default async function SuccessPage({
+  searchParams
+}: {
+  searchParams: Promise<{ event?: string; dream?: string; match?: string; before?: string }>;
+}) {
+  const params = await searchParams;
+  const event = await loadDemoEvent(params.event);
   const dream = event ? await getDemoDream(event.worker_id) : null;
-  const matchedPence = Math.max(0, Math.min(Number(match) || 0, event?.amount_pence ?? 0));
+  const dreamLinked = params.dream === "1";
+  const matchedPence = dreamLinked ? Math.max(0, Math.min(Number(params.match) || 0, event?.amount_pence ?? 0)) : 0;
+  const beforePence = dreamLinked && dream ? Math.max(0, Math.min(Number(params.before) || 0, dream.funded_pence)) : undefined;
 
   return (
     <PublicShell minimal>
@@ -51,7 +57,12 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
 
         {event && dream && (
           <div className="mt-4">
-            <DreamCard dream={dream} workerName={event.workers?.display_name ?? "Their"} matchedPence={matchedPence} />
+            <DreamCard
+              dream={dream}
+              workerName={event.workers?.display_name ?? "Their"}
+              matchedPence={matchedPence}
+              beforePence={beforePence}
+            />
           </div>
         )}
 
