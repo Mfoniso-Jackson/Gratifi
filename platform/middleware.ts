@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { isDemoMode } from "@/lib/demo/mode";
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request });
@@ -9,7 +10,7 @@ export async function middleware(request: NextRequest) {
 
   if ((!isAdminPath && !isAdminApi) || isLogin) return response;
   // Demo mode serves sample data only; admin pages are open so the product can be previewed.
-  if (process.env.GRATIFI_DEMO_MODE === "true") return response;
+  if (isDemoMode()) return response;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",

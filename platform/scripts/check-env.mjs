@@ -18,4 +18,9 @@ for (const [group, keys] of Object.entries(groups)) {
   }
 }
 
+if (process.env.GRATIFI_DEMO_MODE === "true") {
+  hasMissing = true;
+  console.log("demo: GRATIFI_DEMO_MODE is true; turn it off before deploying (admin pages are open in demo mode)");
+}
+
 if (hasMissing) process.exit(1);

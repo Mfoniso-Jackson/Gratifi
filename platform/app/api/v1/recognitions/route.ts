@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { PaymentService } from "@/lib/services/PaymentService";
 import { protocolError, protocolResponse } from "@/lib/services/ProtocolApiService";
-import { rateLimit } from "@/lib/services/rateLimit";
+import { clientKey, rateLimit } from "@/lib/services/rateLimit";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { isDemoMode } from "@/lib/demo/mode";
 import { applyDemoDreamTip } from "@/lib/demo/dreams";
@@ -15,8 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const key = request.headers.get("x-forwarded-for") ?? "local";
-  if (!rateLimit(key)) return protocolError("Too many requests", 429);
+  if (!(await rateLimit(`checkout:${clientKey(request.headers)}`))) return protocolError("Too many requests", 429);
 
   const form = await request.formData();
   const amountPence = Number(form.get("amountPence"));
