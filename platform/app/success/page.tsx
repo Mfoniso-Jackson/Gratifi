@@ -2,6 +2,8 @@ import Link from "next/link";
 import { PublicShell } from "@/components/Shell";
 import { isDemoMode } from "@/lib/demo/mode";
 import { createServiceClient } from "@/lib/supabase/server";
+import { DreamCard } from "@/components/DreamCard";
+import { getDemoDream } from "@/lib/demo/dreams";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +18,11 @@ async function loadDemoEvent(eventId: string | undefined) {
   return result.data as any;
 }
 
-export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ event?: string }> }) {
-  const { event: eventId } = await searchParams;
+export default async function SuccessPage({ searchParams }: { searchParams: Promise<{ event?: string; match?: string }> }) {
+  const { event: eventId, match } = await searchParams;
   const event = await loadDemoEvent(eventId);
+  const dream = event ? await getDemoDream(event.worker_id) : null;
+  const matchedPence = Math.max(0, Math.min(Number(match) || 0, event?.amount_pence ?? 0));
 
   return (
     <PublicShell minimal>
@@ -42,6 +46,12 @@ export default async function SuccessPage({ searchParams }: { searchParams: Prom
             {event.message && <p className="mt-3 rounded-xl bg-paper p-3 leading-7 text-ink/80">“{event.message}”</p>}
             <p className="mt-4 text-xs text-ink/50">Proof reference</p>
             <p className="break-all font-mono text-xs text-ink/70">{event.recognition_hash}</p>
+          </div>
+        )}
+
+        {event && dream && (
+          <div className="mt-4">
+            <DreamCard dream={dream} workerName={event.workers?.display_name ?? "Their"} matchedPence={matchedPence} />
           </div>
         )}
 

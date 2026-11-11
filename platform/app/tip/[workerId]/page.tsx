@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { Avatar, PublicShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { WorkerService } from "@/lib/services/WorkerService";
+import { DreamCard } from "@/components/DreamCard";
+import { getDemoDream } from "@/lib/demo/dreams";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,7 @@ export default async function TipPage({ params }: { params: Promise<{ workerId: 
   const worker = await new WorkerService(db).get(workerId);
   if (worker.error || !worker.data) notFound();
   const venue = worker.data.venues;
+  const dream = await getDemoDream(worker.data.id);
 
   return (
     <PublicShell minimal>
@@ -35,6 +38,12 @@ export default async function TipPage({ params }: { params: Promise<{ workerId: 
             <p className="text-ink/60">{worker.data.role}</p>
           </div>
         </div>
+
+        {dream && (
+          <div className="mt-6">
+            <DreamCard dream={dream} workerName={worker.data.display_name} />
+          </div>
+        )}
 
         <form action="/api/v1/recognitions" method="post" className="mt-8 grid gap-6">
           <input type="hidden" name="workerId" value={worker.data.id} />

@@ -5,6 +5,7 @@ import { protocolError, protocolResponse } from "@/lib/services/ProtocolApiServi
 import { rateLimit } from "@/lib/services/rateLimit";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { isDemoMode } from "@/lib/demo/mode";
+import { applyDemoDreamMatch } from "@/lib/demo/dreams";
 
 export async function GET() {
   const db = createServiceClient();
@@ -34,7 +35,9 @@ export async function POST(request: Request) {
       stripePaymentIntentId: `pi_demo_${crypto.randomUUID()}`,
       stripeStatus: "paid"
     });
-    return NextResponse.redirect(new URL(`/success?event=${event.id}`, request.url), 303);
+    const matched = await applyDemoDreamMatch(workerId, amountPence);
+    const query = matched > 0 ? `event=${event.id}&match=${matched}` : `event=${event.id}`;
+    return NextResponse.redirect(new URL(`/success?${query}`, request.url), 303);
   }
 
   const session = await new PaymentService().createCheckoutSession({ workerId, venueId, amountPence, message });

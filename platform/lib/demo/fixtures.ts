@@ -193,5 +193,33 @@ export function buildDemoData(): Record<string, Row[]> {
     }
   ];
 
-  return { venues, workers, recognition_events, pilot_checklist_items, pilot_evidence };
+  // Dream Fund mock-up: staff goals funded by a sponsor brand (placeholder name for pitching to brands).
+  const worker_dreams: Row[] = [
+    {
+      id: demoUuid("de30f006", 1),
+      worker_id: workers[0].id,
+      title: "Level 2 barista course",
+      story: "I want to compete in the regional latte art championship next spring.",
+      target_pence: 45000,
+      funded_pence: 31500,
+      sponsor_name: "Your Brand Here",
+      mode: "match",
+      status: "active",
+      created_at: daysAgo(14)
+    },
+    {
+      id: demoUuid("de30f006", 2),
+      worker_id: workers[4].id,
+      title: "My own barber's chair",
+      story: "Saving towards renting my first chair in town.",
+      target_pence: 180000,
+      funded_pence: 62000,
+      sponsor_name: "Your Brand Here",
+      mode: "match",
+      status: "active",
+      created_at: daysAgo(6)
+    }
+  ];
+
+  return { venues, workers, recognition_events, pilot_checklist_items, pilot_evidence, worker_dreams };
 }
