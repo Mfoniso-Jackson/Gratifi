@@ -1,36 +1,68 @@
 import { randomUUID } from "node:crypto";
 import { buildDemoData } from "./fixtures";
+import { redisConfig, redisPipeline, type RedisOptions } from "@/lib/services/redis";
 
 type Row = Record<string, any>;
 type Result = { data: any; error: { message: string } | null; count?: number };
 
-/**
- * A minimal in-memory stand-in for the subset of the Supabase query builder
- * this app uses: select (with one level of embedded relations), insert,
- * update, upsert, eq, order, limit, single and maybeSingle.
- *
- * Data lives in-process and resets when the server restarts.
- */
-const globalStore = globalThis as unknown as { __gratifiDemoData?: Record<string, Row[]> };
+type DemoData = Record<string, Row[]>;
 
-function store() {
+/**
+ * A minimal stand-in for the subset of the Supabase query builder this app uses: select (with one
+ * level of embedded relations), insert, update, upsert, eq, order, limit, single and maybeSingle.
+ *
+ * Where the data lives:
+ * - With Upstash Redis configured (UPSTASH_REDIS_REST_URL/TOKEN), the whole demo dataset is one
+ *   Redis key, so every serverless instance (for example on a Vercel preview) sees the same tips and
+ *   dream progress. It resets to the sample data after 7 days without changes.
+ * - Otherwise it lives in this process's memory and resets when the server restarts.
+ */
+export const DEMO_DATA_KEY = "gratifi:demo:data:v1";
+const DEMO_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+const globalStore = globalThis as unknown as { __gratifiDemoData?: DemoData };
+
+function memoryData() {
   globalStore.__gratifiDemoData ??= buildDemoData();
   return globalStore.__gratifiDemoData;
 }
 
-function table(name: string) {
-  const s = store();
-  s[name] ??= [];
-  return s[name];
+async function loadDemoData(options: RedisOptions): Promise<DemoData> {
+  if (!redisConfig(options.env ?? process.env)) return memoryData();
+  try {
+    const [raw] = await redisPipeline([["GET", DEMO_DATA_KEY]], options);
+    if (typeof raw === "string") return JSON.parse(raw) as DemoData;
+    const fresh = buildDemoData();
+    // NX: if another instance seeded the data first, keep theirs.
+    await redisPipeline([["SET", DEMO_DATA_KEY, JSON.stringify(fresh), "EX", DEMO_TTL_SECONDS, "NX"]], options);
+    return fresh;
+  } catch (error) {
+    console.error("Shared demo data unavailable, using this instance's memory:", error);
+    return memoryData();
+  }
+}
+
+async function saveDemoData(data: DemoData, options: RedisOptions) {
+  if (!redisConfig(options.env ?? process.env)) return;
+  try {
+    await redisPipeline([["SET", DEMO_DATA_KEY, JSON.stringify(data), "EX", DEMO_TTL_SECONDS]], options);
+  } catch (error) {
+    console.error("Could not save shared demo data:", error);
+  }
+}
+
+function table(data: DemoData, name: string) {
+  data[name] ??= [];
+  return data[name];
 }
 
 // "venues(name)" on a row embeds the venue referenced by `venue_id`.
-function embedRelations(row: Row, columns: string) {
+function embedRelations(data: DemoData, row: Row, columns: string) {
   const out = { ...row };
   for (const match of columns.matchAll(/(\w+)\(([^)]*)\)/g)) {
     const relation = match[1];
     const foreignKey = `${relation.replace(/s$/, "")}_id`;
-    const related = table(relation).find((r) => r.id === row[foreignKey]);
+    const related = table(data, relation).find((r) => r.id === row[foreignKey]);
     out[relation] = related ? { ...related } : null;
   }
   return out;
@@ -46,7 +78,10 @@ class DemoQuery implements PromiseLike<Result> {
   private payload: Row | Row[] | null = null;
   private upsertOptions: { onConflict?: string; ignoreDuplicates?: boolean } = {};
 
-  constructor(private readonly tableName: string) {}
+  constructor(
+    private readonly tableName: string,
+    private readonly options: RedisOptions = {}
+  ) {}
 
   select(columns = "*") {
     this.columns = columns;
@@ -101,17 +136,22 @@ class DemoQuery implements PromiseLike<Result> {
     onfulfilled?: ((value: Result) => T1 | PromiseLike<T1>) | null,
     onrejected?: ((reason: unknown) => T2 | PromiseLike<T2>) | null
   ): PromiseLike<T1 | T2> {
-    return Promise.resolve()
-      .then(() => this.execute())
-      .then(onfulfilled, onrejected);
+    return this.run().then(onfulfilled, onrejected);
+  }
+
+  private async run(): Promise<Result> {
+    const data = await loadDemoData(this.options);
+    const result = this.execute(data);
+    if (this.op !== "select") await saveDemoData(data, this.options);
+    return result;
   }
 
   private matches(row: Row) {
     return this.filters.every(([column, value]) => row[column] === value);
   }
 
-  private execute(): Result {
-    const rows = table(this.tableName);
+  private execute(data: DemoData): Result {
+    const rows = table(data, this.tableName);
     let affected: Row[];
 
     if (this.op === "insert") {
@@ -138,7 +178,7 @@ class DemoQuery implements PromiseLike<Result> {
       affected = rows.filter((row) => this.matches(row));
     }
 
-    let result = affected.map((row) => embedRelations(row, this.columns));
+    let result = affected.map((row) => embedRelations(data, row, this.columns));
 
     if (this.orders.length > 0) {
       result = [...result].sort((a, b) => {
@@ -174,9 +214,9 @@ class DemoQuery implements PromiseLike<Result> {
   }
 }
 
-export function createDemoClient() {
+export function createDemoClient(options: RedisOptions = {}) {
   return {
-    from: (tableName: string) => new DemoQuery(tableName),
+    from: (tableName: string) => new DemoQuery(tableName, options),
     auth: {
       getUser: async () => ({ data: { user: { id: "demo-admin", email: "demo@gratifi.local" } }, error: null })
     }
