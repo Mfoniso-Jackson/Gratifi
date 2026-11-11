@@ -19,17 +19,19 @@ export function rateLimitInMemory(key: string, limit = 30, windowMs = 60_000) {
   return true;
 }
 
-async function redisCommand(url: string, token: string, command: (string | number)[], fetchImpl: typeof fetch) {
-  const response = await fetchImpl(url, {
+/** Runs commands in one Upstash REST pipeline call and returns each command's result in order. */
+async function redisPipeline(url: string, token: string, commands: (string | number)[][], fetchImpl: typeof fetch) {
+  const response = await fetchImpl(`${url.replace(/\/$/, "")}/pipeline`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(command),
+    body: JSON.stringify(commands),
     cache: "no-store"
   });
   if (!response.ok) throw new Error(`Redis responded ${response.status}`);
-  const body = (await response.json()) as { result?: unknown; error?: string };
-  if (body.error) throw new Error(body.error);
-  return body.result;
+  const body = (await response.json()) as Array<{ result?: unknown; error?: string }>;
+  const failed = body.find((entry) => entry.error);
+  if (failed) throw new Error(failed.error);
+  return body.map((entry) => entry.result);
 }
 
 export async function rateLimit(
@@ -46,9 +48,18 @@ export async function rateLimit(
   const fetchImpl = options.fetchImpl ?? fetch;
   const redisKey = `gratifi:ratelimit:${key}`;
   try {
-    const count = Number(await redisCommand(url, token, ["INCR", redisKey], fetchImpl));
-    if (count === 1) await redisCommand(url, token, ["PEXPIRE", redisKey, windowMs], fetchImpl);
-    return count <= limit;
+    // Create the key with its expiry before counting, so a key can never be left without a TTL
+    // (which would block that client for good). INCR keeps the TTL that SET gave the key.
+    const [, count] = await redisPipeline(
+      url,
+      token,
+      [
+        ["SET", redisKey, 0, "PX", windowMs, "NX"],
+        ["INCR", redisKey]
+      ],
+      fetchImpl
+    );
+    return Number(count) <= limit;
   } catch (error) {
     console.error("Shared rate limit unavailable, using in-memory limit:", error);
     return rateLimitInMemory(key, limit, windowMs);

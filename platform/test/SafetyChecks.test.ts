@@ -21,27 +21,36 @@ describe("rate limit", () => {
   const env = { UPSTASH_REDIS_REST_URL: "https://redis.example", UPSTASH_REDIS_REST_TOKEN: "token" };
 
   function fakeRedis() {
-    const counts = new Map<string, number>();
-    const commands: unknown[][] = [];
-    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
-      const command = JSON.parse(String(init.body)) as unknown[];
-      commands.push(command);
-      if (command[0] === "INCR") {
+    const store = new Map<string, { value: number; ttl: boolean }>();
+    const calls: { url: string; commands: unknown[][] }[] = [];
+    const fetchImpl = vi.fn(async (url: string, init: RequestInit) => {
+      const commands = JSON.parse(String(init.body)) as unknown[][];
+      calls.push({ url, commands });
+      const results = commands.map((command) => {
         const key = String(command[1]);
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-        return new Response(JSON.stringify({ result: counts.get(key) }));
-      }
-      return new Response(JSON.stringify({ result: 1 }));
+        if (command[0] === "SET") {
+          if (store.has(key)) return { result: null };
+          store.set(key, { value: Number(command[2]), ttl: command.includes("PX") });
+          return { result: "OK" };
+        }
+        const entry = store.get(key) ?? { value: 0, ttl: false };
+        entry.value += 1;
+        store.set(key, entry);
+        return { result: entry.value };
+      });
+      return new Response(JSON.stringify(results));
     });
-    return { fetchImpl: fetchImpl as unknown as typeof fetch, commands };
+    return { fetchImpl: fetchImpl as unknown as typeof fetch, calls, store };
   }
 
-  it("uses the shared Redis count and sets the window expiry once", async () => {
+  it("uses the shared Redis count, and every key gets an expiry", async () => {
     const redis = fakeRedis();
     const results = [];
     for (let i = 0; i < 3; i += 1) results.push(await rateLimit("shared-a", 2, 60_000, { env, fetchImpl: redis.fetchImpl }));
     expect(results).toEqual([true, true, false]);
-    expect(redis.commands.filter((c) => c[0] === "PEXPIRE")).toHaveLength(1);
+    expect(redis.calls.every((call) => call.url === "https://redis.example/pipeline")).toBe(true);
+    expect(redis.calls.at(0)?.commands.at(0)).toEqual(["SET", "gratifi:ratelimit:shared-a", 0, "PX", 60_000, "NX"]);
+    expect(redis.store.get("gratifi:ratelimit:shared-a")?.ttl).toBe(true);
   });
 
   it("falls back to the in-memory limit when Redis fails", async () => {

@@ -118,4 +118,4 @@ To preview the whole app without Supabase, Stripe or Moonbeam, run it with sampl
 GRATIFI_DEMO_MODE=true pnpm dev
 ```
 
-Then open `/v/demo-cafe` for the customer flow and `/admin` for the venue dashboard. Admin pages are open and payments are simulated, so never enable demo mode on a real deployment.
+Then open `/v/demo-cafe` for the customer flow and `/admin` for the venue dashboard. Demo data lives in the memory of one server process, so run it with `pnpm dev` or `pnpm build && pnpm start` on a single machine. On serverless hosting such as Vercel, each request can land on a different instance, so tips and dream progress recorded in the demo may not show on the next page. Admin pages are open and payments are simulated, so never enable demo mode on a real deployment.
