@@ -99,6 +99,34 @@ export class RecognitionEngine {
     }
   }
 
+  /**
+   * Re-anchors recognitions that failed (retry) or have sat in pending longer than `staleMinutes`.
+   * Called by the scheduled job; processes at most `limit` per run, oldest first.
+   */
+  async retryStuck(options: { staleMinutes?: number; limit?: number; now?: Date } = {}) {
+    const staleMinutes = options.staleMinutes ?? 10;
+    const limit = options.limit ?? 25;
+    const cutoff = new Date((options.now ?? new Date()).getTime() - staleMinutes * 60_000).toISOString();
+
+    const [retry, pending] = await Promise.all([
+      this.db.from("recognition_events").select("*").eq("moonbeam_status", "retry").order("created_at").limit(limit),
+      this.db.from("recognition_events").select("*").eq("moonbeam_status", "pending").order("created_at").limit(limit)
+    ]);
+    if (retry.error) throw retry.error;
+    if (pending.error) throw pending.error;
+
+    const due = [...(retry.data ?? []), ...(pending.data ?? []).filter((event: any) => event.created_at < cutoff)]
+      .sort((a: any, b: any) => (a.created_at < b.created_at ? -1 : 1))
+      .slice(0, limit);
+
+    let confirmed = 0;
+    for (const event of due) {
+      const result = await this.anchor(event);
+      if (result?.moonbeam_status === "confirmed") confirmed += 1;
+    }
+    return { attempted: due.length, confirmed, stillFailing: due.length - confirmed };
+  }
+
   async retry(eventId: string) {
     const event = await this.db.from("recognition_events").select("*").eq("id", eventId).single();
     if (event.error) throw event.error;

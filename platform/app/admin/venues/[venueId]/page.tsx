@@ -1,14 +1,18 @@
 import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { QRService } from "@/lib/services/QRService";
+import { notFound } from "next/navigation";
+import { canAccessVenue, requireAdmin } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function VenueAdminPage({ params }: { params: Promise<{ venueId: string }> }) {
   const { venueId } = await params;
+  const context = await requireAdmin();
+  if (!canAccessVenue(context, venueId)) notFound();
   const db = createServiceClient();
   const venue = await db.from("venues").select("*").eq("id", venueId).single();
-  if (venue.error) throw new Error("Venue not found");
+  if (venue.error || !venue.data) notFound();
   const qr = new QRService();
   const svg = await qr.toSvg(qr.venueUrl(venue.data.slug));
 

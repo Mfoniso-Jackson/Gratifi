@@ -221,5 +221,15 @@ export function buildDemoData(): Record<string, Row[]> {
     }
   ];
 
-  return { venues, workers, recognition_events, pilot_checklist_items, pilot_evidence, worker_dreams };
+  // About three QR scans for every recognition, spread over the same days.
+  const qr_scans: Row[] = recognition_events.flatMap((event, i) =>
+    [0, 1, 2].map((n) => ({
+      id: demoUuid("de30a99a", i * 3 + n + 1),
+      venue_id: event.venue_id,
+      worker_id: n === 0 ? event.worker_id : null,
+      created_at: new Date(Date.parse(event.created_at) - (n + 1) * 7 * 60 * 1000).toISOString()
+    }))
+  );
+
+  return { venues, workers, recognition_events, pilot_checklist_items, pilot_evidence, worker_dreams, qr_scans };
 }

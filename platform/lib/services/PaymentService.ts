@@ -2,10 +2,16 @@ import Stripe from "stripe";
 import { appConfig } from "@/lib/config";
 
 export class PaymentService {
-  private stripe: Stripe;
+  private client: Stripe | undefined;
 
-  constructor(stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "")) {
-    this.stripe = stripe;
+  constructor(stripe?: Stripe) {
+    this.client = stripe;
+  }
+
+  /** Created on first use, so checking a webhook signature doesn't need the API key. */
+  private get stripe(): Stripe {
+    this.client ??= new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
+    return this.client;
   }
 
   async createCheckoutSession(input: {
@@ -44,6 +50,8 @@ export class PaymentService {
   verifyWebhook(payload: string | Buffer, signature: string) {
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!secret) throw new Error("STRIPE_WEBHOOK_SECRET is not configured.");
-    return this.stripe.webhooks.constructEvent(payload, signature, secret);
+    // Signature checks only need the webhook secret; the placeholder key is never used for API calls.
+    const verifier = this.client ?? new Stripe(process.env.STRIPE_SECRET_KEY || "sk_webhook_verification_only");
+    return verifier.webhooks.constructEvent(payload, signature, secret);
   }
 }

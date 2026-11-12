@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm exec next build"
+  "buildCommand": "pnpm exec next build",
+  "crons": [
+    {
+      "path": "/api/cron/retry-anchoring",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }

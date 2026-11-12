@@ -17,7 +17,8 @@ type DemoData = Record<string, Row[]>;
  *   dream progress. It resets to the sample data after 7 days without changes.
  * - Otherwise it lives in this process's memory and resets when the server restarts.
  */
-export const DEMO_DATA_KEY = "gratifi:demo:data:v1";
+// Bump the version when the sample data changes, so hosted previews reseed.
+export const DEMO_DATA_KEY = "gratifi:demo:data:v2";
 const DEMO_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 const globalStore = globalThis as unknown as { __gratifiDemoData?: DemoData };
@@ -69,7 +70,7 @@ function embedRelations(data: DemoData, row: Row, columns: string) {
 }
 
 class DemoQuery implements PromiseLike<Result> {
-  private filters: Array<[string, unknown]> = [];
+  private filters: Array<(row: Row) => boolean> = [];
   private orders: Array<[string, boolean]> = [];
   private limitCount: number | null = null;
   private mode: "many" | "single" | "maybeSingle" = "many";
@@ -108,7 +109,12 @@ class DemoQuery implements PromiseLike<Result> {
   }
 
   eq(column: string, value: unknown) {
-    this.filters.push([column, value]);
+    this.filters.push((row) => row[column] === value);
+    return this;
+  }
+
+  in(column: string, values: unknown[]) {
+    this.filters.push((row) => values.includes(row[column]));
     return this;
   }
 
@@ -147,7 +153,7 @@ class DemoQuery implements PromiseLike<Result> {
   }
 
   private matches(row: Row) {
-    return this.filters.every(([column, value]) => row[column] === value);
+    return this.filters.every((filter) => filter(row));
   }
 
   private execute(data: DemoData): Result {

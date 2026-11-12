@@ -5,7 +5,9 @@ Use this checklist after the repo is deployed and before taking live payments.
 ## Supabase
 
 - Create a Supabase project.
-- Run `supabase/migrations/001_initial_gratifi.sql`.
+- Run `supabase/migrations/001_initial_gratifi.sql`, then `002_pilot_playbook.sql` and `003_access_control.sql`.
+- Turn off public sign-ups in Supabase Auth, or keep them on: accounts without a role in `admin_users` get no access either way.
+- Grant yourself access with `pnpm grant:access <email> admin`, and venue owners with `pnpm grant:access <email> owner <venue-slug>`.
 - Copy the project URL, anon key, and service role key into Vercel.
 - Create the first admin user with `pnpm seed:demo` or through Supabase Auth.
 - Confirm RLS is enabled on `venues`, `workers`, and `recognition_events`.
@@ -14,7 +16,7 @@ Use this checklist after the repo is deployed and before taking live payments.
 
 - Create products are not required; GratiFi creates Checkout Sessions dynamically.
 - Add a webhook endpoint for `/api/stripe/webhook`.
-- Subscribe to `checkout.session.completed`.
+- Subscribe to `checkout.session.completed`, `charge.refunded`, `charge.dispute.created` and `charge.dispute.closed`.
 - Set `STRIPE_WEBHOOK_SECRET` in Vercel.
 - Run one Stripe test payment and confirm a `recognition_events` row is created.
 

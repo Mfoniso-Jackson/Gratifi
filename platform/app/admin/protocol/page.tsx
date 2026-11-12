@@ -1,3 +1,4 @@
+import { requireGlobalAdmin } from "@/lib/auth/access";
 import { AdminShell } from "@/components/Shell";
 import { MoonbeamService } from "@/lib/services/MoonbeamService";
 import { protocolVersion } from "@/lib/config";
@@ -5,6 +6,7 @@ import { protocolVersion } from "@/lib/config";
 export const dynamic = "force-dynamic";
 
 export default async function ProtocolPage() {
+  await requireGlobalAdmin();
   const status = await new MoonbeamService().status().catch((error) => ({
     configured: false,
     contractAddress: null,

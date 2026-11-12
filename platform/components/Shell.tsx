@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { isDemoMode } from "@/lib/demo/mode";
+import { getAdminContext } from "@/lib/auth/access";
 
 function DemoBanner() {
   if (!isDemoMode()) return null;
@@ -41,15 +42,18 @@ export function PublicShell({ children, minimal = false }: { children: React.Rea
   );
 }
 
-export function AdminShell({ children, nav = true }: { children: React.ReactNode; nav?: boolean }) {
+export async function AdminShell({ children, nav = true }: { children: React.ReactNode; nav?: boolean }) {
+  const context = await getAdminContext();
+  const isAdmin = context?.role === "admin";
+  // Pilot tools and protocol status are for GratiFi staff; venue owners see their own venues only.
   const links = [
-    ["/admin", "Overview"],
-    ["/admin/pilot", "Pilot"],
-    ["/admin/venues", "Venues"],
-    ["/admin/workers", "Workers"],
-    ["/admin/events", "Events"],
-    ["/admin/protocol", "Protocol"]
-  ];
+    ["/admin", "Overview", true],
+    ["/admin/pilot", "Pilot", isAdmin],
+    ["/admin/venues", isAdmin ? "Venues" : "My venues", true],
+    ["/admin/workers", "Staff", true],
+    ["/admin/events", "Tips", true],
+    ["/admin/protocol", "Protocol", isAdmin]
+  ].filter(([, , visible]) => visible) as Array<[string, string, boolean]>;
 
   return (
     <main className="min-h-screen bg-[#f6f7f2] text-ink">
@@ -86,7 +90,20 @@ export function Stat({ label, value }: { label: string; value: string }) {
 
 const avatarColors = ["bg-coral/20 text-[#b33a26]", "bg-mint text-[#1f5c34]", "bg-[#dfe7f5] text-steel", "bg-[#f6e7c8] text-[#7a5310]"];
 
-export function Avatar({ name, size = "h-12 w-12 text-lg" }: { name: string; size?: string }) {
+export function Avatar({
+  name,
+  photoUrl,
+  size = "h-12 w-12 text-lg"
+}: {
+  name: string;
+  photoUrl?: string | null;
+  size?: string;
+}) {
+  if (photoUrl && photoUrl.startsWith("https://")) {
+    // Plain <img>: staff photos can be hosted anywhere, so next/image's host allowlist doesn't fit.
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={photoUrl} alt="" className={`shrink-0 rounded-full object-cover ${size}`} />;
+  }
   const index = [...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % avatarColors.length;
   return (
     <span className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${size} ${avatarColors[index]}`}>

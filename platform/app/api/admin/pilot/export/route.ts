@@ -1,7 +1,10 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { adminApiAccess } from "@/lib/auth/access";
 import { PilotService, pilotSummaryRows } from "@/lib/services/PilotService";
 
 export async function GET() {
+  const access = await adminApiAccess({ globalOnly: true });
+  if (access instanceof Response) return access;
   const metrics = await new PilotService(createServiceClient()).listPilotVenues();
   const rows = pilotSummaryRows(metrics);
   const header = Object.keys(rows[0] ?? {

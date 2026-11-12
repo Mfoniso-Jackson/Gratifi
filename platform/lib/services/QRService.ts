@@ -1,13 +1,14 @@
 import QRCode from "qrcode";
 import { appConfig } from "@/lib/config";
+import { QR_SOURCE_PARAM, QR_SOURCE_VALUE } from "@/lib/services/ScanService";
 
 export class QRService {
   venueUrl(slug: string) {
-    return `${appConfig.appUrl}/v/${slug}`;
+    return `${appConfig.appUrl}/v/${slug}?${QR_SOURCE_PARAM}=${QR_SOURCE_VALUE}`;
   }
 
   workerUrl(workerId: string) {
-    return `${appConfig.appUrl}/tip/${workerId}`;
+    return `${appConfig.appUrl}/tip/${workerId}?${QR_SOURCE_PARAM}=${QR_SOURCE_VALUE}`;
   }
 
   toSvg(url: string) {

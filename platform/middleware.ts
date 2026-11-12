@@ -28,9 +28,19 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data } = await supabase.auth.getUser();
-  if (!data.user) {
+  // Signed in is not enough: the account must be listed in admin_users (as admin or venue owner).
+  // RLS lets users read only their own row, so this check runs with their session.
+  const access = data.user
+    ? await supabase.from("admin_users").select("role").eq("user_id", data.user.id).maybeSingle()
+    : null;
+
+  if (!data.user || !access?.data) {
+    if (isAdminApi) {
+      return NextResponse.json({ error: "Sign in with an account that has access." }, { status: data.user ? 403 : 401 });
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
+    url.search = data.user ? "?error=no-access" : "";
     return NextResponse.redirect(url);
   }
 

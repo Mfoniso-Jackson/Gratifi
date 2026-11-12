@@ -1,4 +1,5 @@
 import { appConfig } from "@/lib/config";
+import { REVERSED_STRIPE_STATUSES } from "@/lib/services/StripeWebhookHandler";
 
 export const pilotStatuses = ["prospect", "onboarded", "live", "paused", "completed"] as const;
 export const venueTypes = ["cafe", "barbershop", "pub", "restaurant", "other"] as const;
@@ -69,7 +70,9 @@ export class PilotService {
     const recognitionEvents = events.data ?? [];
     const workerCount = (workers.data ?? []).length;
     const recognitionCount = recognitionEvents.length;
-    const totalTipPence = recognitionEvents.reduce((sum: number, event: any) => sum + Number(event.amount_pence ?? 0), 0);
+    const totalTipPence = recognitionEvents
+      .filter((event: any) => !REVERSED_STRIPE_STATUSES.includes(String(event.stripe_status)))
+      .reduce((sum: number, event: any) => sum + Number(event.amount_pence ?? 0), 0);
     const confirmedCount = recognitionEvents.filter((event: any) => event.moonbeam_status === "confirmed").length;
     const successfulStripeCount = recognitionEvents.filter((event: any) =>
       ["paid", "succeeded"].includes(String(event.stripe_status))

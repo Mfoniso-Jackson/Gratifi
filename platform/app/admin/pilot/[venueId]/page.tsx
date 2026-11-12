@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { requireGlobalAdmin } from "@/lib/auth/access";
 import { AdminShell, Stat } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatMoney, percent, PilotService, pilotStatuses, venueTypes } from "@/lib/services/PilotService";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 async function updateVenue(formData: FormData) {
   "use server";
+  await requireGlobalAdmin();
   const venueId = String(formData.get("venueId"));
   await new PilotService(createServiceClient()).updateVenueFromForm(venueId, formData);
   revalidatePath(`/admin/pilot/${venueId}`);
@@ -16,6 +18,7 @@ async function updateVenue(formData: FormData) {
 
 async function updateChecklist(formData: FormData) {
   "use server";
+  await requireGlobalAdmin();
   const venueId = String(formData.get("venueId"));
   await new PilotService(createServiceClient()).updateChecklistFromForm(venueId, formData);
   revalidatePath(`/admin/pilot/${venueId}`);
@@ -23,12 +26,14 @@ async function updateChecklist(formData: FormData) {
 
 async function updateEvidence(formData: FormData) {
   "use server";
+  await requireGlobalAdmin();
   const venueId = String(formData.get("venueId"));
   await new PilotService(createServiceClient()).upsertEvidenceFromForm(venueId, formData);
   revalidatePath(`/admin/pilot/${venueId}`);
 }
 
 export default async function PilotVenuePage({ params }: { params: Promise<{ venueId: string }> }) {
+  await requireGlobalAdmin();
   const { venueId } = await params;
   const profile = await new PilotService(createServiceClient()).getVenueProfile(venueId);
   const { venue, metrics, checklist, evidence } = profile;

@@ -4,14 +4,22 @@ import { Avatar, PublicShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { VenueService } from "@/lib/services/VenueService";
 import { WorkerService } from "@/lib/services/WorkerService";
+import { isQrVisit, recordScan } from "@/lib/services/ScanService";
 
 export const dynamic = "force-dynamic";
 
-export default async function VenuePage({ params }: { params: Promise<{ venueSlug: string }> }) {
+export default async function VenuePage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ venueSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { venueSlug } = await params;
   const db = createServiceClient();
   const venue = await new VenueService(db).getBySlug(venueSlug);
   if (venue.error || !venue.data) notFound();
+  if (isQrVisit(await searchParams)) await recordScan(db, { venueId: venue.data.id });
   const workers = await new WorkerService(db).listByVenue(venue.data.id);
   const team = workers.data ?? [];
 
@@ -30,7 +38,7 @@ export default async function VenuePage({ params }: { params: Promise<{ venueSlu
               href={`/tip/${worker.id}`}
               className="group flex items-center gap-4 rounded-2xl border border-ink/10 bg-white p-4 transition hover:border-ink/30 hover:shadow-sm"
             >
-              <Avatar name={worker.display_name} />
+              <Avatar name={worker.display_name} photoUrl={worker.photo_url} />
               <div className="flex-1">
                 <p className="text-lg font-semibold">{worker.display_name}</p>
                 <p className="text-sm text-ink/60">{worker.role}</p>
