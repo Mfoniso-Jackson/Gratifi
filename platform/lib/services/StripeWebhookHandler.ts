@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import type { RecognitionPayload } from "@/lib/types/domain";
 import { saveSubscription } from "@/lib/billing/BillingService";
+import { applySponsorInvoiceEvent } from "@/lib/sponsors/InvoiceService";
 
 /**
  * Applies a verified Stripe event to GratiFi's records.
@@ -24,6 +25,7 @@ export type WebhookOutcome =
   | { action: "recognition_created" }
   | { action: "status_updated"; paymentIntentId: string; stripeStatus: string }
   | { action: "subscription_saved"; subscriptionId: string }
+  | { action: "sponsor_invoice_updated"; invoiceId: string }
   | { action: "ignored"; reason: string };
 
 /** Stripe statuses that no longer count as money given to staff. */
@@ -107,6 +109,15 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       return saved
         ? { action: "subscription_saved", subscriptionId: subscription.id }
         : { action: "ignored", reason: "Not a GratiFi venue subscription" };
+    }
+
+    case "invoice.paid":
+    case "invoice.voided":
+    case "invoice.marked_uncollectible": {
+      const invoice = event.data.object as Stripe.Invoice;
+      return (await applySponsorInvoiceEvent(deps.db, event.type, invoice))
+        ? { action: "sponsor_invoice_updated", invoiceId: invoice.id as string }
+        : { action: "ignored", reason: "Not a sponsor invoice" };
     }
 
     default:

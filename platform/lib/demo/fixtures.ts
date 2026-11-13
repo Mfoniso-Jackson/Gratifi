@@ -287,7 +287,30 @@ export function buildDemoData(): Record<string, Row[]> {
     created_at: daysAgo(i % 14, 9 + (i % 9))
   }));
 
+  // A sample data request, so the admin queue has something to show in demo mode.
+  const sampleTip = recognition_events[2];
+  const data_requests: Row[] = [
+    {
+      id: demoUuid("de30d00c", 1),
+      reference: "DR-4F2A9C1E",
+      requester_type: "customer",
+      request_type: "delete",
+      email: "customer@example.com",
+      name: null,
+      venue_name: "Juniper and Oak",
+      tip_date: String(sampleTip.created_at).slice(0, 10),
+      amount_pence: sampleTip.amount_pence,
+      details: "Please delete the note I left.",
+      status: "received",
+      due_on: dateOnly(29),
+      admin_note: null,
+      completed_at: null,
+      created_at: daysAgo(1)
+    }
+  ];
+
   return {
+    data_requests,
     venues,
     workers,
     recognition_events,

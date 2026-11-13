@@ -17,6 +17,7 @@ Subscribe to:
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
+- `invoice.paid`, `invoice.voided`, `invoice.marked_uncollectible` (sponsor invoices)
 
 For "Manage billing" to work, switch on the customer portal in the Stripe dashboard (Settings, Billing, Customer portal).
 

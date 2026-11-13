@@ -5,6 +5,8 @@ import { requireGlobalAdmin } from "@/lib/auth/access";
 import { isDemoMode } from "@/lib/demo/mode";
 import { createServiceClient } from "@/lib/supabase/server";
 import { checkLogo } from "@/lib/sponsors/SponsorService";
+import { dueOn, sendSponsorInvoice, validateInvoice } from "@/lib/sponsors/InvoiceService";
+import { PaymentService } from "@/lib/services/PaymentService";
 
 const pence = (value: FormDataEntryValue | null) => Math.max(0, Math.round(Number(String(value ?? "0").replace(/[£,\s]/g, "")) * 100) || 0);
 const text = (value: FormDataEntryValue | null) => String(value ?? "").trim();
@@ -108,4 +110,47 @@ export async function attachDreamToCampaign(formData: FormData) {
     .update({ sponsor_campaign_id: text(formData.get("campaignId")) || null })
     .eq("id", text(formData.get("dreamId")));
   revalidatePath("/admin/sponsors");
+}
+
+export async function setBillingEmail(formData: FormData) {
+  await requireGlobalAdmin();
+  const sponsorId = text(formData.get("sponsorId"));
+  const email = text(formData.get("billingEmail")).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid billing email.");
+  await createServiceClient().from("sponsors").update({ billing_email: email }).eq("id", sponsorId);
+  revalidatePath(`/admin/sponsors/${sponsorId}`);
+}
+
+/** Sends a placement-fee invoice through Stripe (simulated in demo mode). */
+export async function sendInvoice(formData: FormData) {
+  await requireGlobalAdmin();
+  const db = createServiceClient();
+  const sponsorId = text(formData.get("sponsorId"));
+  const sponsor = (await db.from("sponsors").select("*").eq("id", sponsorId).single()).data;
+  if (!sponsor) throw new Error("Sponsor not found.");
+  const request = {
+    sponsor,
+    campaignId: text(formData.get("campaignId")) || null,
+    amountPence: pence(formData.get("amount")),
+    description: text(formData.get("description")),
+    daysUntilDue: Number(text(formData.get("daysUntilDue")) || 14)
+  };
+  const problem = validateInvoice(request);
+  if (problem) throw new Error(problem);
+
+  if (isDemoMode()) {
+    await db.from("sponsor_invoices").insert({
+      sponsor_id: sponsorId,
+      campaign_id: request.campaignId,
+      description: request.description,
+      amount_pence: request.amountPence,
+      stripe_invoice_id: `in_demo_${Date.now()}`,
+      hosted_invoice_url: null,
+      status: "open",
+      due_on: dueOn(request.daysUntilDue)
+    });
+  } else {
+    await sendSponsorInvoice(new PaymentService().api(), db, request);
+  }
+  revalidatePath(`/admin/sponsors/${sponsorId}`);
 }
