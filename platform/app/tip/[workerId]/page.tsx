@@ -6,7 +6,7 @@ import { WorkerService } from "@/lib/services/WorkerService";
 import { isQrVisit, recordScan } from "@/lib/services/ScanService";
 import { DreamCard } from "@/components/DreamCard";
 import { DreamTipForm } from "@/components/DreamTipForm";
-import { getDemoDream } from "@/lib/demo/dreams";
+import { getDream, recordSponsorView } from "@/lib/dreams/DreamService";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,8 @@ export default async function TipPage({
   if (worker.error || !worker.data) notFound();
   if (isQrVisit(await searchParams)) await recordScan(db, { venueId: worker.data.venue_id, workerId: worker.data.id });
   const venue = worker.data.venues;
-  const dream = await getDemoDream(worker.data.id);
+  const dream = await getDream(db, worker.data.id);
+  if (dream) await recordSponsorView(db, { campaignId: dream.campaign_id, venueId: worker.data.venue_id, page: "tip" });
 
   return (
     <PublicShell minimal>

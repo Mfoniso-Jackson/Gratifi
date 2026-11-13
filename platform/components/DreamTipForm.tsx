@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Dream } from "@/lib/demo/dreams";
-import { dreamContribution } from "@/lib/demo/dreamMath";
+import type { Dream } from "@/lib/dreams/DreamService";
+import { dreamContribution } from "@/lib/dreams/math";
 
 const amounts = [300, 500, 1000, 2000];
 
@@ -69,7 +69,9 @@ export function DreamTipForm({
                 ? preview.match > 0
                   ? `Your ${pounds(preview.fromTip)} + a ${pounds(preview.match)} match from ${dream.sponsor_name} takes ${workerName} to ${afterPercent}% of the goal.`
                   : `Your ${pounds(preview.fromTip)} takes ${workerName} to ${afterPercent}% of the goal.`
-                : `${dream.sponsor_name} matches tips that go toward the dream.`}
+                : dream.sponsor_name
+                  ? `${dream.sponsor_name} matches tips that go toward the dream.`
+                  : "Your tip is counted toward the dream."}
             </span>
           </span>
         </label>

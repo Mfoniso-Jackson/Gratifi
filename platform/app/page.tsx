@@ -39,8 +39,8 @@ export default function Home() {
             <Link className="rounded-full bg-ink px-6 py-3 font-medium text-white hover:bg-ink/85" href={demo ? "/v/demo-cafe" : "/demo"}>
               {demo ? "Try it as a customer" : "See how it works"}
             </Link>
-            <Link className="rounded-full border border-ink/15 bg-white px-6 py-3 font-medium hover:border-ink/40" href="/admin">
-              {demo ? "View the venue dashboard" : "Venue sign in"}
+            <Link className="rounded-full border border-ink/15 bg-white px-6 py-3 font-medium hover:border-ink/40" href={demo ? "/admin" : "/for-venues"}>
+              {demo ? "View the venue dashboard" : "Start a free pilot"}
             </Link>
           </div>
         </div>
@@ -83,8 +83,8 @@ export default function Home() {
             <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Running a pilot at your venue?</h2>
             <p className="mt-2 max-w-xl text-white/70">Setup takes about ten minutes: add your team, print your QR card, and you're live.</p>
           </div>
-          <Link href="/demo" className="rounded-full bg-coral px-6 py-3 font-semibold text-ink hover:bg-[#ff8a77]">
-            Walk through the demo
+          <Link href="/for-venues" className="rounded-full bg-coral px-6 py-3 font-semibold text-ink hover:bg-[#ff8a77]">
+            Start your free pilot
           </Link>
         </div>
       </section>

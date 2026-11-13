@@ -28,6 +28,8 @@ export function buildDemoData(): Record<string, Row[]> {
     {
       id: demoUuid("de30a001", 1),
       slug: "demo-cafe",
+      referral_code: "juniper1",
+      signup_source: "admin",
       name: "Juniper & Oak Café",
       address: "14 Market Street, Bristol",
       status: "active",
@@ -50,6 +52,8 @@ export function buildDemoData(): Record<string, Row[]> {
     {
       id: demoUuid("de30a001", 2),
       slug: "sharp-and-co",
+      referral_code: "sharpco2",
+      signup_source: "self_serve",
       name: "Sharp & Co Barbers",
       address: "3 Hope Lane, Leeds",
       status: "active",
@@ -72,6 +76,9 @@ export function buildDemoData(): Record<string, Row[]> {
     {
       id: demoUuid("de30a001", 3),
       slug: "the-lamplighter",
+      referral_code: "lamplit3",
+      signup_source: "self_serve",
+      referred_by_code: "juniper1",
       name: "The Lamplighter",
       address: "88 Canal Road, Manchester",
       status: "active",
@@ -193,32 +200,56 @@ export function buildDemoData(): Record<string, Row[]> {
     }
   ];
 
-  // Dream Fund mock-up: staff goals funded by a sponsor brand (placeholder name for pitching to brands).
+  // Dream Fund sample: one sponsor ("Your Brand Here", a placeholder for pitching) running a match campaign.
+  const sponsors: Row[] = [
+    { id: demoUuid("de30f007", 1), name: "Your Brand Here", website: null, logo_url: null, status: "active", created_at: daysAgo(30) }
+  ];
+  const sponsor_campaigns: Row[] = [
+    {
+      id: demoUuid("de30f008", 1),
+      sponsor_id: sponsors[0].id,
+      name: "Autumn dreams pilot",
+      mode: "match",
+      fund_pence: 200000,
+      fund_spent_pence: 48500,
+      placement_fee_pence: 0,
+      starts_on: dateOnly(-14),
+      ends_on: dateOnly(76),
+      status: "live",
+      created_at: daysAgo(15)
+    }
+  ];
+  const campaign_venues: Row[] = [
+    { id: demoUuid("de30f009", 1), campaign_id: sponsor_campaigns[0].id, venue_id: venues[0].id, blocked: false },
+    { id: demoUuid("de30f009", 2), campaign_id: sponsor_campaigns[0].id, venue_id: venues[1].id, blocked: false }
+  ];
   const worker_dreams: Row[] = [
     {
       id: demoUuid("de30f006", 1),
       worker_id: workers[0].id,
+      sponsor_campaign_id: sponsor_campaigns[0].id,
       title: "Level 2 barista course",
       story: "I want to compete in the regional latte art championship next spring.",
       target_pence: 45000,
       funded_pence: 31500,
-      sponsor_name: "Your Brand Here",
-      mode: "match",
       status: "active",
       created_at: daysAgo(14)
     },
     {
       id: demoUuid("de30f006", 2),
       worker_id: workers[4].id,
+      sponsor_campaign_id: sponsor_campaigns[0].id,
       title: "My own barber's chair",
       story: "Saving towards renting my first chair in town.",
       target_pence: 180000,
       funded_pence: 62000,
-      sponsor_name: "Your Brand Here",
-      mode: "match",
       status: "active",
       created_at: daysAgo(6)
     }
+  ];
+  const dream_contributions: Row[] = [
+    { id: demoUuid("de30f00a", 1), dream_id: worker_dreams[0].id, recognition_event_id: null, from_tip_pence: 15750, match_pence: 15750, created_at: daysAgo(10) },
+    { id: demoUuid("de30f00a", 2), dream_id: worker_dreams[1].id, recognition_event_id: null, from_tip_pence: 29250, match_pence: 32750, created_at: daysAgo(4) }
   ];
 
   // About three QR scans for every recognition, spread over the same days.
@@ -231,5 +262,26 @@ export function buildDemoData(): Record<string, Row[]> {
     }))
   );
 
-  return { venues, workers, recognition_events, pilot_checklist_items, pilot_evidence, worker_dreams, qr_scans };
+  const sponsor_views: Row[] = Array.from({ length: 40 }, (_, i) => ({
+    id: demoUuid("de30f00b", i + 1),
+    campaign_id: sponsor_campaigns[0].id,
+    venue_id: venues[i % 2].id,
+    page: i % 3 === 0 ? "thank_you" : "tip",
+    created_at: daysAgo(i % 14, 9 + (i % 9))
+  }));
+
+  return {
+    venues,
+    workers,
+    recognition_events,
+    pilot_checklist_items,
+    pilot_evidence,
+    sponsors,
+    sponsor_campaigns,
+    campaign_venues,
+    worker_dreams,
+    dream_contributions,
+    sponsor_views,
+    qr_scans
+  };
 }

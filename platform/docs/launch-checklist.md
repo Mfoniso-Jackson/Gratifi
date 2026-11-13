@@ -5,7 +5,8 @@ Use this checklist after the repo is deployed and before taking live payments.
 ## Supabase
 
 - Create a Supabase project.
-- Run `supabase/migrations/001_initial_gratifi.sql`, then `002_pilot_playbook.sql` and `003_access_control.sql`.
+- Run `supabase/migrations/001_initial_gratifi.sql`, then `002_pilot_playbook.sql`, `003_access_control.sql`, `004_qr_scans.sql`, `005_billing_and_signup.sql`, `006_staff_accounts.sql` and `007_sponsors.sql`.
+- In Supabase Auth, set the Site URL to your domain and keep email confirmation on: self-serve venue sign-ups and staff invites both send emails.
 - Turn off public sign-ups in Supabase Auth, or keep them on: accounts without a role in `admin_users` get no access either way.
 - Grant yourself access with `pnpm grant:access <email> admin`, and venue owners with `pnpm grant:access <email> owner <venue-slug>`.
 - Copy the project URL, anon key, and service role key into Vercel.
@@ -16,7 +17,8 @@ Use this checklist after the repo is deployed and before taking live payments.
 
 - Create products are not required; GratiFi creates Checkout Sessions dynamically.
 - Add a webhook endpoint for `/api/stripe/webhook`.
-- Subscribe to `checkout.session.completed`, `charge.refunded`, `charge.dispute.created` and `charge.dispute.closed`.
+- Subscribe to `checkout.session.completed`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed` and `customer.subscription.created`, `.updated` and `.deleted`.
+- Switch on the Stripe customer portal so venues can manage their plan.
 - Set `STRIPE_WEBHOOK_SECRET` in Vercel.
 - Run one Stripe test payment and confirm a `recognition_events` row is created.
 
@@ -52,3 +54,11 @@ Use this checklist after the repo is deployed and before taking live payments.
 - Complete the QR deployment checklist.
 - Record feedback and evidence links.
 - Export a venue case study from `/admin/pilot/[venueId]/case-study`.
+
+## Growth features
+
+- Self-serve sign-up lives at `/for-venues`; each venue's referral link is on its admin page.
+- Venues choose a plan at `/admin/billing` (Stripe test mode first). Turn on the Stripe customer portal for "Manage billing".
+- Staff sign in at `/staff/login` after a manager invites them from the Staff page.
+- Payroll export is at `/admin/payroll` (Pro, the add-on, or during the pilot).
+- Sponsors and the Dream Fund stay off until legal sign-off. Set them up at `/admin/sponsors`, then set `GRATIFI_SPONSORS_ENABLED=true` to show them to customers.

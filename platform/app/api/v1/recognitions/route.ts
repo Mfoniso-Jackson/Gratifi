@@ -5,7 +5,7 @@ import { protocolError, protocolResponse } from "@/lib/services/ProtocolApiServi
 import { clientKey, rateLimit } from "@/lib/services/rateLimit";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { isDemoMode } from "@/lib/demo/mode";
-import { applyDemoDreamTip } from "@/lib/demo/dreams";
+import { applyDreamTip } from "@/lib/dreams/DreamService";
 
 export async function GET() {
   const db = createServiceClient();
@@ -34,14 +34,23 @@ export async function POST(request: Request) {
       stripePaymentIntentId: `pi_demo_${crypto.randomUUID()}`,
       stripeStatus: "paid"
     });
-    const dreamTip = form.get("dreamLinked") === "on" ? await applyDemoDreamTip(workerId, amountPence) : null;
+    const dreamTip =
+      form.get("dreamLinked") === "on"
+        ? await applyDreamTip(createServiceClient(), { workerId, amountPence, recognitionId: event.id })
+        : null;
     const query = dreamTip
       ? `event=${event.id}&dream=1&match=${dreamTip.match}&before=${dreamTip.before}`
       : `event=${event.id}`;
     return NextResponse.redirect(new URL(`/success?${query}`, request.url), 303);
   }
 
-  const session = await new PaymentService().createCheckoutSession({ workerId, venueId, amountPence, message });
+  const session = await new PaymentService().createCheckoutSession({
+    workerId,
+    venueId,
+    amountPence,
+    message,
+    dreamLinked: form.get("dreamLinked") === "on"
+  });
   if (!session.url) return protocolError("Stripe did not return a checkout URL", 500);
   return NextResponse.redirect(session.url, 303);
 }

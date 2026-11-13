@@ -19,6 +19,7 @@ export class PaymentService {
     venueId: string;
     amountPence: number;
     message?: string | null;
+    dreamLinked?: boolean;
   }) {
     if (input.amountPence < appConfig.minTipAmountPence || input.amountPence > appConfig.maxTipAmountPence) {
       throw new Error("Amount is outside configured recognition limits.");
@@ -40,11 +41,18 @@ export class PaymentService {
       metadata: {
         workerId: input.workerId,
         venueId: input.venueId,
-        message: input.message ?? ""
+        message: input.message ?? "",
+        dreamLinked: input.dreamLinked ? "true" : "false"
       },
       success_url: `${appConfig.appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appConfig.appUrl}/tip/${input.workerId}`
     });
+  }
+
+  /** The Stripe client for other server code (billing). Throws a clear error when no API key is set. */
+  api(): Stripe {
+    if (!this.client && !process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured.");
+    return this.stripe;
   }
 
   verifyWebhook(payload: string | Buffer, signature: string) {

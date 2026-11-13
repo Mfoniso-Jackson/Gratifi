@@ -49,9 +49,12 @@ export async function AdminShell({ children, nav = true }: { children: React.Rea
   const links = [
     ["/admin", "Overview", true],
     ["/admin/pilot", "Pilot", isAdmin],
+    ["/admin/sponsors", "Sponsors", isAdmin],
     ["/admin/venues", isAdmin ? "Venues" : "My venues", true],
     ["/admin/workers", "Staff", true],
     ["/admin/events", "Tips", true],
+    ["/admin/payroll", "Payroll", true],
+    ["/admin/billing", "Billing", true],
     ["/admin/protocol", "Protocol", isAdmin]
   ].filter(([, , visible]) => visible) as Array<[string, string, boolean]>;
 

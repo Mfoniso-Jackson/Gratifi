@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { PaymentService } from "@/lib/services/PaymentService";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { handleStripeEvent } from "@/lib/services/StripeWebhookHandler";
+import { applyDreamTip } from "@/lib/dreams/DreamService";
+import { sponsorsEnabled } from "@/lib/features";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -20,7 +22,8 @@ export async function POST(request: Request) {
   const db = createServiceClient();
   const outcome = await handleStripeEvent(event, {
     db,
-    createRecognition: (payload) => new RecognitionEngine(db).createFromPaidIntent(payload)
+    createRecognition: (payload) => new RecognitionEngine(db).createFromPaidIntent(payload),
+    applyDreamTip: sponsorsEnabled() ? (input) => applyDreamTip(db, input) : undefined
   });
 
   return Response.json({ received: true, outcome: outcome.action });

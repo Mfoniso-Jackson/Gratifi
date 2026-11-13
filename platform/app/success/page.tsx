@@ -3,7 +3,7 @@ import { PublicShell } from "@/components/Shell";
 import { isDemoMode } from "@/lib/demo/mode";
 import { createServiceClient } from "@/lib/supabase/server";
 import { DreamCard } from "@/components/DreamCard";
-import { getDemoDream } from "@/lib/demo/dreams";
+import { getDream, recordSponsorView } from "@/lib/dreams/DreamService";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ async function loadDemoEvent(eventId: string | undefined) {
   if (!eventId || !isDemoMode()) return null;
   const result = await createServiceClient()
     .from("recognition_events")
-    .select("*, workers(display_name), venues(name, slug)")
+    .select("*, workers(display_name), venues(name, slug, referral_code)")
     .eq("id", eventId)
     .maybeSingle();
   return result.data as any;
@@ -25,7 +25,9 @@ export default async function SuccessPage({
 }) {
   const params = await searchParams;
   const event = await loadDemoEvent(params.event);
-  const dream = event ? await getDemoDream(event.worker_id) : null;
+  const db = createServiceClient();
+  const dream = event ? await getDream(db, event.worker_id) : null;
+  if (dream && event) await recordSponsorView(db, { campaignId: dream.campaign_id, venueId: event.venue_id, page: "thank_you" });
   const dreamLinked = params.dream === "1";
   const matchedPence = dreamLinked ? Math.max(0, Math.min(Number(params.match) || 0, event?.amount_pence ?? 0)) : 0;
   const beforePence = dreamLinked && dream ? Math.max(0, Math.min(Number(params.before) || 0, dream.funded_pence)) : undefined;
@@ -72,6 +74,16 @@ export default async function SuccessPage({
         >
           Done
         </Link>
+
+        <p className="mt-10 text-sm text-ink/60">
+          Run a café, bar or salon?{" "}
+          <Link
+            href={event?.venues?.referral_code ? `/for-venues?ref=${event.venues.referral_code}` : "/for-venues"}
+            className="font-medium text-ink underline underline-offset-4"
+          >
+            Get GratiFi for your venue
+          </Link>
+        </p>
       </section>
     </PublicShell>
   );

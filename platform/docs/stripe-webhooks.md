@@ -14,6 +14,11 @@ Subscribe to:
 - `charge.refunded`
 - `charge.dispute.created`
 - `charge.dispute.closed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+For "Manage billing" to work, switch on the customer portal in the Stripe dashboard (Settings, Billing, Customer portal).
 
 The webhook handler:
 

@@ -2,6 +2,9 @@ import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { canAccessVenue, requireAdmin, scopeToVenues } from "@/lib/auth/access";
+import { appConfig } from "@/lib/config";
+import { isDemoMode } from "@/lib/demo/mode";
+import { findUserIdByEmail } from "@/lib/supabase/authUsers";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +24,41 @@ async function createWorker(formData: FormData) {
   revalidatePath("/admin/workers");
 }
 
+async function workerYouManage(workerId: string) {
+  const context = await requireAdmin();
+  const db = createServiceClient();
+  const worker = await db.from("workers").select("id, venue_id").eq("id", workerId).maybeSingle();
+  if (!worker.data || !canAccessVenue(context, worker.data.venue_id)) throw new Error("Staff member not found.");
+  return { db, worker: worker.data };
+}
+
+/** Invites a staff member by email so they can sign in and see their own tips and notes. */
+async function inviteStaff(formData: FormData) {
+  "use server";
+  const { db, worker } = await workerYouManage(String(formData.get("workerId")));
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
+
+  let userId: string | null = null;
+  if (isDemoMode()) {
+    userId = "demo-staff";
+  } else {
+    const invite = await (db as any).auth.admin.inviteUserByEmail(email, { redirectTo: `${appConfig.appUrl}/staff` });
+    // Someone who already has an account (for example a manager who also takes tips) is linked as they are.
+    userId = invite.data?.user?.id ?? (await findUserIdByEmail(db, email));
+    if (!userId) throw new Error(invite.error?.message ?? "Could not invite that email address.");
+  }
+  await db.from("workers").update({ user_id: userId }).eq("id", worker.id);
+  revalidatePath("/admin/workers");
+}
+
+async function removeStaffAccess(formData: FormData) {
+  "use server";
+  const { db, worker } = await workerYouManage(String(formData.get("workerId")));
+  await db.from("workers").update({ user_id: null }).eq("id", worker.id);
+  revalidatePath("/admin/workers");
+}
+
 /** Accepts only https links, so a pasted http or data URL can't end up on public pages. */
 function photoUrl(value: FormDataEntryValue | null) {
   const url = String(value ?? "").trim();
@@ -34,7 +72,8 @@ export default async function WorkersPage() {
   const venues = await scopeToVenues(db.from("venues").select("id, name").eq("status", "active"), context, "id").order("name");
   return (
     <AdminShell>
-      <h1 className="text-3xl font-bold">Workers</h1>
+      <h1 className="text-3xl font-bold">Staff</h1>
+      <p className="mt-2 text-ink/70">Invite staff by email so they can see their own tips and thank-you notes at <span className="font-mono text-sm">/staff</span>.</p>
       <form action={createWorker} className="mt-6 grid gap-3 rounded-md border border-ink/10 bg-white p-4 md:grid-cols-[1fr_1fr_1fr_1fr_auto]">
         <select name="venueId" required className="rounded-md border border-ink/15 px-3 py-2">
           {(venues.data ?? []).map((venue: any) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}
@@ -46,9 +85,24 @@ export default async function WorkersPage() {
       </form>
       <div className="mt-6 grid gap-3">
         {(workers.data ?? []).map((worker: any) => (
-          <div key={worker.id} className="rounded-md border border-ink/10 bg-white p-4">
-            <p className="font-semibold">{worker.display_name}</p>
-            <p className="text-sm text-ink/60">{worker.role} at {worker.venues?.name}</p>
+          <div key={worker.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-ink/10 bg-white p-4">
+            <div>
+              <p className="font-semibold">{worker.display_name}</p>
+              <p className="text-sm text-ink/60">{worker.role} at {worker.venues?.name}</p>
+            </div>
+            {worker.user_id ? (
+              <form action={removeStaffAccess} className="flex items-center gap-3 text-sm">
+                <span className="rounded-full bg-mint px-2.5 py-0.5 text-[#1f5c34]">Can sign in</span>
+                <input type="hidden" name="workerId" value={worker.id} />
+                <button className="text-ink/60 underline">Remove access</button>
+              </form>
+            ) : (
+              <form action={inviteStaff} className="flex flex-wrap items-center gap-2 text-sm">
+                <input type="hidden" name="workerId" value={worker.id} />
+                <input id={`invite-${worker.id}`} name="email" type="email" required placeholder="Their email" aria-label={`Email for ${worker.display_name}`} className="rounded-md border border-ink/15 px-3 py-1.5" />
+                <button className="rounded-md border border-ink/15 px-3 py-1.5">Invite</button>
+              </form>
+            )}
           </div>
         ))}
       </div>
