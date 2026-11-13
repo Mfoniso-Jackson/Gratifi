@@ -23,7 +23,7 @@ export interface PilotVenueMetrics {
   recognitionCount: number;
   totalTipPence: number;
   averageRecognitionPence: number;
-  moonbeamConfirmationRate: number;
+  anchorConfirmationRate: number;
   stripeSuccessRate: number;
   qrCodesGenerated: number;
 }
@@ -73,7 +73,7 @@ export class PilotService {
     const totalTipPence = recognitionEvents
       .filter((event: any) => !REVERSED_STRIPE_STATUSES.includes(String(event.stripe_status)))
       .reduce((sum: number, event: any) => sum + Number(event.amount_pence ?? 0), 0);
-    const confirmedCount = recognitionEvents.filter((event: any) => event.moonbeam_status === "confirmed").length;
+    const confirmedCount = recognitionEvents.filter((event: any) => event.anchor_status === "confirmed").length;
     const successfulStripeCount = recognitionEvents.filter((event: any) =>
       ["paid", "succeeded"].includes(String(event.stripe_status))
     ).length;
@@ -84,7 +84,7 @@ export class PilotService {
       recognitionCount,
       totalTipPence,
       averageRecognitionPence: recognitionCount > 0 ? Math.round(totalTipPence / recognitionCount) : 0,
-      moonbeamConfirmationRate: rate(confirmedCount, recognitionCount),
+      anchorConfirmationRate: rate(confirmedCount, recognitionCount),
       stripeSuccessRate: rate(successfulStripeCount, recognitionCount),
       qrCodesGenerated: workerCount + 1
     };
@@ -185,7 +185,7 @@ export function pilotSummaryRows(metrics: PilotVenueMetrics[]) {
     qr_codes_generated: item.qrCodesGenerated,
     recognition_events: item.recognitionCount,
     total_tip_volume_gbp: formatMoney(item.totalTipPence),
-    moonbeam_confirmation_rate: percent(item.moonbeamConfirmationRate),
+    anchor_confirmation_rate: percent(item.anchorConfirmationRate),
     stripe_success_rate: percent(item.stripeSuccessRate),
     follow_up_date: item.venue.follow_up_date ?? ""
   }));
@@ -216,7 +216,7 @@ export function caseStudyMarkdown(profile: {
 - Recognition count: ${metrics.recognitionCount}
 - Total tip volume: £${formatMoney(metrics.totalTipPence)}
 - Average recognition value: £${formatMoney(metrics.averageRecognitionPence)}
-- Moonbeam confirmation rate: ${percent(metrics.moonbeamConfirmationRate)}
+- On-chain record rate: ${percent(metrics.anchorConfirmationRate)}
 - Stripe success rate: ${percent(metrics.stripeSuccessRate)}
 - QR deployment checklist: ${completedChecklist}/${profile.checklist.length} complete
 
@@ -254,7 +254,7 @@ export function venueSummaryJson(profile: any) {
       recognition_events: profile.metrics.recognitionCount,
       total_tip_volume_pence: profile.metrics.totalTipPence,
       average_recognition_pence: profile.metrics.averageRecognitionPence,
-      moonbeam_confirmation_rate: profile.metrics.moonbeamConfirmationRate,
+      anchor_confirmation_rate: profile.metrics.anchorConfirmationRate,
       stripe_success_rate: profile.metrics.stripeSuccessRate
     },
     checklist: profile.checklist,

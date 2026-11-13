@@ -1,3 +1,4 @@
+/** Deploys GratiFiProtocol. Run with: npm run deploy:base-sepolia (test) or npm run deploy:base. */
 import hre from "hardhat";
 
 async function main() {
@@ -6,7 +7,9 @@ async function main() {
   const GratiFiProtocol = await hardhatEthers.getContractFactory("GratiFiProtocol");
   const contract = await GratiFiProtocol.deploy(deployer.address);
   await contract.waitForDeployment();
-  console.log(`GratiFiProtocol deployed to ${await contract.getAddress()}`);
+  const address = await contract.getAddress();
+  console.log(`GratiFiProtocol deployed to ${address} on ${hre.network.name}`);
+  console.log(`Set GRATIFI_PROTOCOL_CONTRACT_ADDRESS=${address}`);
 }
 
 main().catch((error) => {

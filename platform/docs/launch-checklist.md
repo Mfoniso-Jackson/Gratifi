@@ -22,12 +22,12 @@ Use this checklist after the repo is deployed and before taking live payments.
 - Set `STRIPE_WEBHOOK_SECRET` in Vercel.
 - Run one Stripe test payment and confirm a `recognition_events` row is created.
 
-## Moonbeam
+## Blockchain record (Base)
 
-- Deploy to Moonbase first with `pnpm hardhat run scripts/deploy-moonbeam.ts --network moonbase`.
+- Deploy to Base Sepolia first with `npm run deploy:base-sepolia` (see docs/base-deployment.md).
 - Set `GRATIFI_PROTOCOL_CONTRACT_ADDRESS`.
-- Run a test payment and confirm `moonbeam_status` moves to `confirmed`.
-- Deploy to Moonbeam mainnet only after the full test-mode path works.
+- Run a test payment and confirm `anchor_status` moves to `confirmed`.
+- Deploy to Base mainnet (`npm run deploy:base`) only after the full test-mode path works.
 
 ## Vercel
 

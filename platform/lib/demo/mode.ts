@@ -1,6 +1,6 @@
 /**
  * Demo mode serves the whole app from an in-memory sample dataset instead of
- * Supabase, Stripe and Moonbeam. It exists so the product can be previewed
+ * Supabase, Stripe and the blockchain. It exists so the product can be previewed
  * without any credentials.
  *
  * Enable with GRATIFI_DEMO_MODE=true. Admin pages are open and payments are

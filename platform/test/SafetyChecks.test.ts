@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isDemoMode } from "@/lib/demo/mode";
 import { clientKey, rateLimit } from "@/lib/services/rateLimit";
-import { isBalanceLow, MoonbeamService } from "@/lib/services/MoonbeamService";
+import { isBalanceLow, ChainService } from "@/lib/services/ChainService";
 import { appConfig } from "@/lib/config";
 
 describe("demo mode guard", () => {
@@ -72,8 +72,8 @@ describe("rate limit", () => {
 });
 
 describe("operator wallet balance", () => {
-  const original = { ...appConfig.moonbeam };
-  afterEach(() => Object.assign(appConfig.moonbeam, original));
+  const original = { ...appConfig.chain };
+  afterEach(() => Object.assign(appConfig.chain, original));
 
   it("flags balances under the threshold", () => {
     expect(isBalanceLow(10n ** 17n, "1")).toBe(true);
@@ -81,18 +81,18 @@ describe("operator wallet balance", () => {
   });
 
   it("reports not configured without an operator key", async () => {
-    Object.assign(appConfig.moonbeam, { rpcUrl: "", operatorPrivateKey: "" });
-    expect((await new MoonbeamService().operatorWalletStatus()).configured).toBe(false);
+    Object.assign(appConfig.chain, { rpcUrl: "", operatorPrivateKey: "" });
+    expect((await new ChainService().operatorWalletStatus()).configured).toBe(false);
   });
 
   it("reads the operator wallet balance and marks it low", async () => {
-    Object.assign(appConfig.moonbeam, {
+    Object.assign(appConfig.chain, {
       rpcUrl: "http://rpc.invalid",
       // Well-known Hardhat test key; never holds real funds.
       operatorPrivateKey: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
     });
-    const status = await new MoonbeamService().operatorWalletStatus(async () => 5n * 10n ** 17n);
-    expect(status).toMatchObject({ configured: true, balance: "0.5", low: true });
+    const status = await new ChainService().operatorWalletStatus(async () => 10n ** 15n);
+    expect(status).toMatchObject({ configured: true, balance: "0.001", low: true });
     expect(status.address).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 });

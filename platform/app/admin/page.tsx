@@ -36,7 +36,7 @@ export default async function AdminPage() {
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Stat label="Recognitions" value={String(rows.length)} />
         <Stat label="Total" value={`£${(total / 100).toFixed(2)}`} />
-        <Stat label="Pending anchoring" value={String(rows.filter((e) => e.moonbeam_status !== "confirmed").length)} />
+        <Stat label="Pending anchoring" value={String(rows.filter((e) => e.anchor_status !== "confirmed").length)} />
         <Stat label="QR scans (30 days)" value={String(scans30)} />
         <Stat label="Scans that led to a tip" value={rate === null ? "No scans yet" : `${rate}%`} />
       </div>

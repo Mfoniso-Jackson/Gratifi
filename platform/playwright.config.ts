@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 /**
  * End-to-end tests: build the app, start it in demo mode (sample data, no Supabase, Stripe or
- * Moonbeam), and click through the main flows. Tests share one server and run in order.
+ * the blockchain), and click through the main flows. Tests share one server and run in order.
  */
 const PORT = 3100;
 

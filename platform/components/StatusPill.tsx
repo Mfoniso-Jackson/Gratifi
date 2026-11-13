@@ -19,8 +19,8 @@ export function paymentPill(stripeStatus: string) {
   return <StatusPill tone="bad">{label}</StatusPill>;
 }
 
-export function recordPill(moonbeamStatus: string) {
-  if (moonbeamStatus === "confirmed") return <StatusPill tone="good">recorded</StatusPill>;
-  if (moonbeamStatus === "pending") return <StatusPill tone="neutral">pending</StatusPill>;
-  return <StatusPill tone="warn">{moonbeamStatus === "retry" ? "will retry" : moonbeamStatus}</StatusPill>;
+export function recordPill(anchorStatus: string) {
+  if (anchorStatus === "confirmed") return <StatusPill tone="good">recorded</StatusPill>;
+  if (anchorStatus === "pending") return <StatusPill tone="neutral">pending</StatusPill>;
+  return <StatusPill tone="warn">{anchorStatus === "retry" ? "will retry" : anchorStatus}</StatusPill>;
 }

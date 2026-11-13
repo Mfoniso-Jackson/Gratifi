@@ -4,7 +4,7 @@ import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 export const dynamic = "force-dynamic";
 
 /**
- * Scheduled job (see vercel.json): retries Moonbeam anchoring for recognitions marked "retry"
+ * Scheduled job (see vercel.json): retries blockchain anchoring for recognitions marked "retry"
  * or stuck in "pending". Vercel Cron sends `Authorization: Bearer $CRON_SECRET`; any other
  * caller is refused, and the job does nothing until CRON_SECRET is set.
  */

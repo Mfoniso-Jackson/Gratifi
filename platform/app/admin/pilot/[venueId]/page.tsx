@@ -55,7 +55,7 @@ export default async function PilotVenuePage({ params }: { params: Promise<{ ven
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Recognition events" value={String(metrics.recognitionCount)} />
         <Stat label="Total tip volume" value={`£${formatMoney(metrics.totalTipPence)}`} />
-        <Stat label="Moonbeam confirmed" value={percent(metrics.moonbeamConfirmationRate)} />
+        <Stat label="Recorded on-chain" value={percent(metrics.anchorConfirmationRate)} />
         <Stat label="Stripe success" value={percent(metrics.stripeSuccessRate)} />
       </div>
 

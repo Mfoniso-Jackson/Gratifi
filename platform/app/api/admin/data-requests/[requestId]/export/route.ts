@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ requ
     request: dataRequest.reference,
     prepared_for: dataRequest.email,
     prepared_at: new Date().toISOString(),
-    note: "Card details are held by Stripe, not GratiFi. Each tip's permanent record on Moonbeam is a hash only.",
+    note: "Card details are held by Stripe, not GratiFi. Each tip's permanent blockchain record (on Base, or Moonbeam for older tips) is a hash only.",
     ...(await exportStaffData(db, query.getAll("workerIds"))),
     ...(await exportTips(db, query.getAll("tipIds")))
   };

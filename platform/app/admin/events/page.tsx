@@ -37,7 +37,7 @@ export default async function TipsPage({ searchParams }: { searchParams: Promise
   const inVenue = params.venueId ? all.filter((e) => e.venue_id === params.venueId) : all;
   const show = FILTERS.some(([value]) => value === params.show) ? params.show : "all";
   const shown = inVenue
-    .filter((e) => (show === "reversed" ? REVERSED_STRIPE_STATUSES.includes(e.stripe_status) : show === "unrecorded" ? e.moonbeam_status !== "confirmed" : true))
+    .filter((e) => (show === "reversed" ? REVERSED_STRIPE_STATUSES.includes(e.stripe_status) : show === "unrecorded" ? e.anchor_status !== "confirmed" : true))
     .slice(0, 200);
   const counted = inVenue.filter((e) => !REVERSED_STRIPE_STATUSES.includes(e.stripe_status));
   const exportUrl = "/api/admin/export";
@@ -53,7 +53,7 @@ export default async function TipsPage({ searchParams }: { searchParams: Promise
         <Stat label="Tips" value={String(counted.length)} />
         <Stat label="Total to staff" value={`£${(counted.reduce((s, e) => s + e.amount_pence, 0) / 100).toFixed(2)}`} />
         <Stat label="Refunded or disputed" value={String(inVenue.length - counted.length)} />
-        <Stat label="Not yet recorded" value={String(inVenue.filter((e) => e.moonbeam_status !== "confirmed").length)} />
+        <Stat label="Not yet recorded" value={String(inVenue.filter((e) => e.anchor_status !== "confirmed").length)} />
       </div>
 
       <form className="mt-6 flex flex-wrap items-end gap-3">
@@ -85,7 +85,7 @@ export default async function TipsPage({ searchParams }: { searchParams: Promise
               <tr><td colSpan={7} className="p-8 text-center text-ink/60">No tips match.</td></tr>
             )}
             {shown.map((event) => {
-              const tx = txUrl(event.moonbeam_tx_hash);
+              const tx = txUrl(event.anchor_tx_hash, event.anchor_chain_id);
               return (
                 <tr key={event.id} className="border-t border-ink/10 align-top">
                   <td className="whitespace-nowrap p-3 text-ink/70">{day(event.created_at)}</td>
@@ -96,9 +96,9 @@ export default async function TipsPage({ searchParams }: { searchParams: Promise
                   <td className="p-3">{paymentPill(event.stripe_status)}</td>
                   <td className="p-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      {recordPill(event.moonbeam_status)}
+                      {recordPill(event.anchor_status)}
                       {tx && <a href={tx} target="_blank" rel="noreferrer" className="text-xs underline">View</a>}
-                      {event.moonbeam_status !== "confirmed" && (
+                      {event.anchor_status !== "confirmed" && (
                         <form action={retryRecord}>
                           <input type="hidden" name="eventId" value={event.id} />
                           <button className="text-xs underline">Retry now</button>

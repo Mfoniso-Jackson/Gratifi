@@ -20,7 +20,7 @@ describe("PilotService helpers", () => {
       recognitionCount: 4,
       totalTipPence: 2000,
       averageRecognitionPence: 500,
-      moonbeamConfirmationRate: 0.75,
+      anchorConfirmationRate: 0.75,
       stripeSuccessRate: 1,
       qrCodesGenerated: 3
     },
@@ -42,7 +42,7 @@ describe("PilotService helpers", () => {
   it("generates a case study markdown draft", () => {
     const markdown = caseStudyMarkdown(profile as any);
     expect(markdown).toContain("GratiFi Pilot Case Study: Demo Cafe");
-    expect(markdown).toContain("Moonbeam confirmation rate: 75%");
+    expect(markdown).toContain("On-chain record rate: 75%");
     expect(markdown).toContain("> It helped us see appreciation clearly.");
   });
 });

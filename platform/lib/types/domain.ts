@@ -1,6 +1,6 @@
 export type VenueStatus = "active" | "inactive";
 export type WorkerStatus = "active" | "inactive";
-export type MoonbeamStatus = "pending" | "confirmed" | "failed" | "retry";
+export type AnchorStatus = "pending" | "confirmed" | "failed" | "retry";
 
 export interface Venue {
   id: string;
@@ -46,10 +46,12 @@ export interface RecognitionEvent {
   recognition_hash: string;
   stripe_payment_intent_id: string;
   stripe_status: string;
-  moonbeam_status: MoonbeamStatus;
-  moonbeam_tx_hash: string | null;
-  moonbeam_block_number: number | null;
-  moonbeam_contract_address: string | null;
+  anchor_status: AnchorStatus;
+  anchor_tx_hash: string | null;
+  anchor_block_number: number | null;
+  anchor_contract_address: string | null;
+  /** The network the record was written to (8453 Base; 1284 for older Moonbeam records). */
+  anchor_chain_id: number | null;
   protocol_version: string;
   created_at: string;
   confirmed_at: string | null;

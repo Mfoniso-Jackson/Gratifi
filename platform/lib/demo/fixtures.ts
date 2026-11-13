@@ -154,10 +154,12 @@ export function buildDemoData(): Record<string, Row[]> {
       recognition_hash: recognitionHash,
       stripe_payment_intent_id: `pi_demo_${String(i + 1).padStart(4, "0")}`,
       stripe_status: "paid",
-      moonbeam_status: status,
-      moonbeam_tx_hash: status === "confirmed" ? hex(`demo-tx-${i}`) : null,
-      moonbeam_block_number: status === "confirmed" ? 9_412_000 + i * 37 : null,
-      moonbeam_contract_address: "0x0000000000000000000000000000000000de3000",
+      anchor_status: status,
+      anchor_tx_hash: status === "confirmed" ? hex(`demo-tx-${i}`) : null,
+      anchor_block_number: status === "confirmed" ? 9_412_000 + i * 37 : null,
+      anchor_contract_address: "0x0000000000000000000000000000000000de3000",
+      // The three oldest sample tips were written to Moonbeam before it shut down; the rest are on Base.
+      anchor_chain_id: status === "confirmed" ? (ago >= 16 ? 1284 : 8453) : null,
       protocol_version: "gratifi-v1",
       created_at: daysAgo(ago, 9 + (i % 9)),
       confirmed_at: status === "confirmed" ? daysAgo(ago, 10 + (i % 9)) : null

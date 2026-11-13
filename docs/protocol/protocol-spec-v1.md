@@ -2,7 +2,7 @@
 
 ## Purpose
 
-GratiFi is a Moonbeam-backed recognition protocol for recording real-world service appreciation. The current production product lets a customer scan a venue or worker QR code, select a recognition amount, pay through Stripe, and receive confirmation that the recognition has been permanently recorded.
+GratiFi is a blockchain-backed recognition protocol (Base since 2026; Moonbeam before it shut down) for recording real-world service appreciation. The current production product lets a customer scan a venue or worker QR code, select a recognition amount, pay through Stripe, and receive confirmation that the recognition has been permanently recorded.
 
 The protocol exists to make recognition events auditable, durable, and portable without exposing customers to wallets, gas, tokens, or chain-specific language.
 
@@ -12,7 +12,7 @@ The protocol exists to make recognition events auditable, durable, and portable 
 - No raw personal data on-chain.
 - Stripe is the source of payment truth.
 - Supabase is the operational recognition ledger.
-- Moonbeam anchors canonical recognition hashes.
+- Base anchors canonical recognition hashes.
 - Recognition events are deterministic and verifiable.
 - v1 does not include tokens, NFTs, reputation scoring, AI, or KILT credentials.
 - Internal APIs are versioned so they can evolve into public APIs and SDKs.
@@ -27,8 +27,8 @@ The protocol exists to make recognition events auditable, durable, and portable 
 6. `RecognitionEngine` validates and normalises the event payload.
 7. `HashService` creates `message_hash` and `recognition_hash`.
 8. Supabase stores the recognition event.
-9. `MoonbeamService` submits the recognition hash to `GratiFiProtocol.sol`.
-10. Supabase updates Moonbeam status, transaction hash, block number, contract address, and confirmation time.
+9. `ChainService` submits the recognition hash to `GratiFiProtocol.sol`.
+10. Supabase updates anchor status, transaction hash, block number, contract address, and confirmation time.
 11. Admins can verify or retry anchoring from the dashboard.
 
 ## Data Model
@@ -53,9 +53,9 @@ GratiFi uses deterministic hashing to bind a recognition event to its canonical 
 - The normalised payload includes `protocolVersion`, venue, worker, amount, currency, message hash, and Stripe payment reference.
 - `recognition_hash` uniquely identifies a recognition event.
 - The database enforces uniqueness on `recognition_hash`.
-- The Moonbeam contract prevents duplicate `recognition_hash` records.
+- The contract prevents duplicate `recognition_hash` records.
 
-## Moonbeam Contract Interaction
+## Contract Interaction (Base)
 
 The backend calls:
 
@@ -91,9 +91,9 @@ To verify a recognition:
 
 1. Retrieve the recognition event by `recognition_hash`.
 2. Confirm the event exists in Supabase.
-3. Confirm `moonbeam_status = confirmed`.
-4. Confirm `moonbeam_tx_hash` and `moonbeam_block_number` are present.
-5. Inspect the transaction on a Moonbeam block explorer.
+3. Confirm `anchor_status = confirmed`.
+4. Confirm `anchor_tx_hash` and `anchor_block_number` are present.
+5. Inspect the transaction on Basescan (or Moonscan for records made before 2026).
 6. Confirm the emitted `RecognitionRecorded` event contains the expected `recognitionHash`.
 
 ## Privacy Model
@@ -102,18 +102,18 @@ The protocol avoids raw personal data on-chain.
 
 - Customer identity is not required.
 - Customer wallets are not required.
-- Raw thank-you messages are not sent to Moonbeam.
+- Raw thank-you messages are not sent on-chain.
 - Venue and worker identifiers are hashed before contract submission.
 - Operational data remains in Supabase under application access controls.
 
 ## Failure and Retry Model
 
-Stripe success and Moonbeam anchoring are separate steps.
+Stripe success and on-chain anchoring are separate steps.
 
-If Stripe succeeds but Moonbeam fails:
+If Stripe succeeds but the chain write fails:
 
 - the recognition remains valid;
-- Supabase stores it with `moonbeam_status = retry`;
+- Supabase stores it with `anchor_status = retry`;
 - the admin dashboard can retry anchoring;
 - duplicate on-chain writes are prevented by `recognition_hash`.
 

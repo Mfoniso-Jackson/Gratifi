@@ -13,4 +13,4 @@ Recommended production additions:
 - Admin membership table if multiple venue operators need scoped access.
 - Storage bucket for worker photos.
 - Audit log table for admin changes.
-- Scheduled job for retrying events with `moonbeam_status = 'retry'`.
+- Scheduled job for retrying events with `anchor_status = 'retry'`.

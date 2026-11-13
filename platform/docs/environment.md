@@ -21,14 +21,17 @@ Webhook signing secret used to verify Stripe events.
 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`  
 Optional client key for future embedded payment UI.
 
-`MOONBEAM_RPC_URL`  
-Moonbeam or Moonbase RPC endpoint.
+`CHAIN_ID`  
+`8453` for Base, `84532` for Base Sepolia (testing). Moonbeam (1284/1287) shut down in 2026 and is refused.
 
-`MOONBEAM_CHAIN_ID`  
-`1284` for Moonbeam, `1287` for Moonbase.
+`CHAIN_RPC_URL`  
+Optional. Defaults to Base's public endpoint for `CHAIN_ID`; use a provider endpoint in production.
 
-`MOONBEAM_OPERATOR_PRIVATE_KEY`  
-Server-only private key authorised to write to `GratiFiProtocol`.
+`CHAIN_OPERATOR_PRIVATE_KEY`  
+Server-only key of the wallet that pays for records. Keep a small ETH balance on Base.
+
+`CHAIN_LOW_BALANCE`  
+Optional. Warning threshold in ETH for `/api/health/operator-wallet` (default 0.002).
 
 `GRATIFI_PROTOCOL_CONTRACT_ADDRESS`  
 Deployed contract address.

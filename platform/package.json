@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "hardhat:test": "hardhat test",
     "hardhat:compile": "hardhat compile",
+    "deploy:base-sepolia": "hardhat run scripts/deploy-contract.ts --network baseSepolia",
+    "deploy:base": "hardhat run scripts/deploy-contract.ts --network base",
     "grant:access": "node scripts/grant-access.mjs",
     "test:e2e": "playwright test --trace off"
   },

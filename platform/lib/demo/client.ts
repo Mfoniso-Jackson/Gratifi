@@ -18,7 +18,7 @@ type DemoData = Record<string, Row[]>;
  * - Otherwise it lives in this process's memory and resets when the server restarts.
  */
 // Bump the version when the sample data changes, so hosted previews reseed.
-export const DEMO_DATA_KEY = "gratifi:demo:data:v5";
+export const DEMO_DATA_KEY = "gratifi:demo:data:v6";
 const DEMO_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 const globalStore = globalThis as unknown as { __gratifiDemoData?: DemoData };

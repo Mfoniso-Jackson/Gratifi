@@ -10,7 +10,7 @@ The pilot dashboard focuses on proof that venues can deploy GratiFi and customer
 - Recognition events per venue.
 - Total tip volume.
 - Stripe success rate.
-- Moonbeam confirmation rate.
+- On-chain record rate (tips recorded on Base).
 
 ## Pilot Targets
 

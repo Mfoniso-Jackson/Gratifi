@@ -1,8 +1,9 @@
 import { requireGlobalAdmin } from "@/lib/auth/access";
 import { AdminShell, Stat } from "@/components/Shell";
 import { StatusPill } from "@/components/StatusPill";
-import { MoonbeamService } from "@/lib/services/MoonbeamService";
-import { protocolVersion } from "@/lib/config";
+import { ChainService } from "@/lib/services/ChainService";
+import { appConfig, protocolVersion } from "@/lib/config";
+import { chainInfo } from "@/lib/chains";
 import { createServiceClient } from "@/lib/supabase/server";
 import { addressUrl, networkName } from "@/lib/explorer";
 
@@ -19,16 +20,21 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 export default async function ProtocolPage() {
   await requireGlobalAdmin();
-  const moonbeam = new MoonbeamService();
-  const status = await moonbeam.status().catch((error) => ({
+  const chain = new ChainService();
+  const network = chainInfo(appConfig.chain.chainId);
+  const gasToken = network?.gasToken ?? "ETH";
+  const status = await chain.status().catch((error) => ({
     configured: false,
     contractAddress: null,
     recognitionCount: null,
+    retired: Boolean(network?.retired),
     error: error instanceof Error ? error.message : "Unknown error"
   }));
-  const wallet = await moonbeam.operatorWalletStatus().catch(() => null);
-  const events = ((await createServiceClient().from("recognition_events").select("moonbeam_status")).data ?? []) as any[];
-  const confirmed = events.filter((e) => e.moonbeam_status === "confirmed").length;
+  const wallet = await chain.operatorWalletStatus().catch(() => null);
+  const events = ((await createServiceClient().from("recognition_events").select("anchor_status, anchor_chain_id")).data ?? []) as any[];
+  const confirmed = events.filter((e) => e.anchor_status === "confirmed").length;
+  // Older records written to Moonbeam before it shut down.
+  const onRetired = events.filter((e) => e.anchor_status === "confirmed" && chainInfo(e.anchor_chain_id)?.retired).length;
   const waiting = events.length - confirmed;
   const contractLink = addressUrl(status.contractAddress);
   const walletLink = addressUrl(wallet?.address);
@@ -37,22 +43,30 @@ export default async function ProtocolPage() {
     <AdminShell>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold">Protocol</h1>
-        {status.configured ? <StatusPill tone="good">Recording on {networkName()}</StatusPill> : <StatusPill tone="warn">Not connected to Moonbeam</StatusPill>}
+        {status.configured ? <StatusPill tone="good">Recording on {networkName()}</StatusPill> : <StatusPill tone="warn">Not connected</StatusPill>}
       </div>
       <p className="mt-2 max-w-2xl text-ink/70">
-        Every paid tip gets a permanent record on Moonbeam. This page checks the contract and the wallet that pays for those records.
+        Every paid tip gets a permanent record on Base, Coinbase&apos;s Ethereum network. Only a fingerprint (hash) of the tip is written,
+        never names or notes. This page checks the contract and the wallet that pays for those records.
       </p>
+
+      {network?.retired && (
+        <div className="mt-6 rounded-xl bg-coral/15 p-4 text-sm text-[#8f2e1f]">
+          <strong>{network.name} has shut down and no longer accepts records.</strong> Set <code>CHAIN_ID</code> to 8453 (Base) and deploy the
+          contract there; see docs/base-deployment.md. Tips are kept and will be recorded once Base is set up.
+        </div>
+      )}
 
       {wallet?.low && (
         <div className="mt-6 rounded-xl bg-coral/15 p-4 text-sm text-[#8f2e1f]">
-          <strong>The operator wallet is running low:</strong> {wallet.balance} GLMR left (warning below {wallet.threshold}). Top it up, or new
+          <strong>The operator wallet is running low:</strong> {wallet.balance} {gasToken} left (warning below {wallet.threshold}). Top it up, or new
           tips will wait to be recorded.
         </div>
       )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <Stat label="Tips in the database" value={String(events.length)} />
-        <Stat label="Recorded on Moonbeam" value={String(confirmed)} />
+        <Stat label="Recorded on-chain" value={String(confirmed)} />
         <Stat label="Waiting or retrying" value={String(waiting)} />
       </div>
 
@@ -62,6 +76,7 @@ export default async function ProtocolPage() {
         <Row label="Contract">
           {status.contractAddress ? (contractLink ? <a href={contractLink} target="_blank" rel="noreferrer" className="underline">{status.contractAddress}</a> : status.contractAddress) : "Not configured"}
         </Row>
+        {onRetired > 0 && <Row label="Older records">{onRetired} written to Moonbeam before it shut down. Their fingerprints are still kept here.</Row>}
         <Row label="Records on the contract">{status.recognitionCount ?? "Unavailable"}</Row>
         <Row label="Operator wallet">
           {wallet === null ? (
@@ -69,7 +84,7 @@ export default async function ProtocolPage() {
           ) : wallet.configured ? (
             <span className="flex flex-wrap items-center gap-2">
               {wallet.low ? <StatusPill tone="bad">Low</StatusPill> : <StatusPill tone="good">OK</StatusPill>}
-              {wallet.balance} GLMR ·{" "}
+              {wallet.balance} {gasToken} ·{" "}
               {walletLink ? <a href={walletLink} target="_blank" rel="noreferrer" className="underline">{wallet.address}</a> : wallet.address}
             </span>
           ) : (

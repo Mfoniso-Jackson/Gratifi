@@ -11,7 +11,7 @@ import { applySponsorInvoiceEvent } from "@/lib/sponsors/InvoiceService";
  * - charge.dispute.created: marks it "disputed"; charge.dispute.closed: "dispute_won" or "dispute_lost".
  * - customer.subscription.created/updated/deleted: keeps venue_subscriptions in step with Stripe Billing.
  *
- * Refunded or disputed tips stay in the ledger and on Moonbeam (the chain record cannot be removed),
+ * Refunded or disputed tips stay in the ledger and on-chain (the chain record cannot be removed),
  * but they are excluded from tip totals.
  */
 export interface WebhookDeps {
