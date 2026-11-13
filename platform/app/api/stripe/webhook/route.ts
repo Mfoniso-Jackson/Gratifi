@@ -1,32 +1,30 @@
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import { createServiceClient } from "@/lib/supabase/server";
 import { PaymentService } from "@/lib/services/PaymentService";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
+import { handleStripeEvent } from "@/lib/services/StripeWebhookHandler";
+import { applyDreamTip } from "@/lib/dreams/DreamService";
+import { sponsorsEnabled } from "@/lib/features";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature) return Response.json({ error: "Missing Stripe signature" }, { status: 400 });
 
   const rawBody = await request.text();
-  const event = new PaymentService().verifyWebhook(rawBody, signature);
-
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const paymentIntentId =
-      typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
-
-    if (paymentIntentId && session.metadata?.venueId && session.metadata?.workerId && session.amount_total) {
-      await new RecognitionEngine(createServiceClient()).createFromPaidIntent({
-        venueId: session.metadata.venueId,
-        workerId: session.metadata.workerId,
-        amountPence: session.amount_total,
-        currency: "GBP",
-        message: session.metadata.message,
-        stripePaymentIntentId: paymentIntentId,
-        stripeStatus: session.payment_status
-      });
-    }
+  let event: Stripe.Event;
+  try {
+    event = new PaymentService().verifyWebhook(rawBody, signature);
+  } catch {
+    // A bad or replayed signature is the sender's problem, not a server error.
+    return Response.json({ error: "Invalid Stripe signature" }, { status: 400 });
   }
 
-  return Response.json({ received: true });
+  const db = createServiceClient();
+  const outcome = await handleStripeEvent(event, {
+    db,
+    createRecognition: (payload) => new RecognitionEngine(db).createFromPaidIntent(payload),
+    applyDreamTip: sponsorsEnabled() ? (input) => applyDreamTip(db, input) : undefined
+  });
+
+  return Response.json({ received: true, outcome: outcome.action });
 }

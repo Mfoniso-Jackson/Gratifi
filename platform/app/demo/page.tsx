@@ -1,5 +1,8 @@
 import { PublicShell } from "@/components/Shell";
 
+// Rendered per request so the demo-mode banner and links reflect the runtime environment.
+export const dynamic = "force-dynamic";
+
 export default function DemoPage() {
   return (
     <PublicShell>

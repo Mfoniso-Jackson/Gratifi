@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
-export function LoginForm() {
+export function LoginForm({ redirectTo = "/admin" }: { redirectTo?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
@@ -20,16 +20,16 @@ export function LoginForm() {
       setError(result.error.message);
       return;
     }
-    router.push("/admin");
+    router.push(redirectTo);
     router.refresh();
   }
 
   return (
     <form onSubmit={onSubmit} className="mt-6 grid gap-4">
-      <input name="email" className="rounded-md border border-ink/15 px-3 py-3" placeholder="Email" type="email" required />
-      <input name="password" className="rounded-md border border-ink/15 px-3 py-3" placeholder="Password" type="password" required />
-      {error ? <p className="text-sm text-coral">{error}</p> : null}
-      <button className="rounded-md bg-ink px-5 py-3 text-white">Sign in</button>
+      <input name="email" className="rounded-xl border border-ink/15 px-4 py-3" placeholder="Email" type="email" required />
+      <input name="password" className="rounded-xl border border-ink/15 px-4 py-3" placeholder="Password" type="password" required />
+      {error ? <p className="text-sm text-[#b33a26]">{error}</p> : null}
+      <button className="rounded-full bg-ink px-5 py-3 font-medium text-white">Sign in</button>
     </form>
   );
 }

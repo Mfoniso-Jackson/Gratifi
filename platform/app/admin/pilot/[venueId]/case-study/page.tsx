@@ -1,3 +1,4 @@
+import { requireGlobalAdmin } from "@/lib/auth/access";
 import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { caseStudyMarkdown, PilotService } from "@/lib/services/PilotService";
@@ -5,6 +6,7 @@ import { caseStudyMarkdown, PilotService } from "@/lib/services/PilotService";
 export const dynamic = "force-dynamic";
 
 export default async function CaseStudyPage({ params }: { params: Promise<{ venueId: string }> }) {
+  await requireGlobalAdmin();
   const { venueId } = await params;
   const profile = await new PilotService(createServiceClient()).getVenueProfile(venueId);
   const markdown = caseStudyMarkdown(profile);

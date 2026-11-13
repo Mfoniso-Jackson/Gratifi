@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireGlobalAdmin } from "@/lib/auth/access";
 import { AdminShell, Stat } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatMoney, percent, PilotService } from "@/lib/services/PilotService";
@@ -6,6 +7,7 @@ import { formatMoney, percent, PilotService } from "@/lib/services/PilotService"
 export const dynamic = "force-dynamic";
 
 export default async function PilotDashboardPage() {
+  await requireGlobalAdmin();
   const metrics = await new PilotService(createServiceClient()).listPilotVenues();
   const totals = metrics.reduce(
     (acc, item) => ({

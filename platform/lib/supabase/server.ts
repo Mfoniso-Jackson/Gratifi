@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
+import { createDemoClient } from "@/lib/demo/client";
+import { isDemoMode } from "@/lib/demo/mode";
 
 export function createServiceClient() {
+  if (isDemoMode()) return createDemoClient() as unknown as ReturnType<typeof createClient>;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -14,6 +18,8 @@ export function createServiceClient() {
 }
 
 export function createAnonClient() {
+  if (isDemoMode()) return createDemoClient() as unknown as ReturnType<typeof createClient>;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

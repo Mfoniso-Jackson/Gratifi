@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "hardhat:test": "hardhat test",
-    "hardhat:compile": "hardhat compile"
+    "hardhat:compile": "hardhat compile",
+    "grant:access": "node scripts/grant-access.mjs"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

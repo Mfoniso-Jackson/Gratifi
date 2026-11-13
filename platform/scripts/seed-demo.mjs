@@ -98,6 +98,23 @@ async function ensureAdmin(email, password) {
   if (created.error && !created.error.message.toLowerCase().includes("already")) {
     throw created.error;
   }
+
+  // Signing in is not enough: the account also needs an admin role (see 003_access_control.sql).
+  const userId = created.data?.user?.id ?? (await findUserId(email));
+  if (!userId) throw new Error(`Could not find the auth user for ${email}`);
+  const role = await supabase.from("admin_users").upsert({ user_id: userId, role: "admin" });
+  if (role.error) throw role.error;
+}
+
+async function findUserId(email) {
+  for (let page = 1; page <= 50; page += 1) {
+    const result = await supabase.auth.admin.listUsers({ page, perPage: 200 });
+    if (result.error) throw result.error;
+    const match = result.data.users.find((user) => user.email?.toLowerCase() === email.toLowerCase());
+    if (match) return match.id;
+    if (result.data.users.length < 200) return null;
+  }
+  return null;
 }
 
 main().catch((error) => {

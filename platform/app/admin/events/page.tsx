@@ -1,13 +1,13 @@
 import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin, scopeToVenues } from "@/lib/auth/access";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
+  const context = await requireAdmin();
   const db = createServiceClient();
-  const events = await db
-    .from("recognition_events")
-    .select("*, venues(name), workers(display_name)")
+  const events = await scopeToVenues(db.from("recognition_events").select("*, venues(name), workers(display_name)"), context)
     .order("created_at", { ascending: false })
     .limit(100);
   return (
@@ -20,7 +20,7 @@ export default async function EventsPage() {
         <table className="w-full min-w-[800px] text-left text-sm">
           <thead className="bg-[#eef4f1]">
             <tr>
-              {["Worker", "Venue", "Amount", "Moonbeam", "Tx", "Created"].map((h) => <th key={h} className="p-3">{h}</th>)}
+              {["Worker", "Venue", "Amount", "Payment", "Moonbeam", "Tx", "Created"].map((h) => <th key={h} className="p-3">{h}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -29,6 +29,7 @@ export default async function EventsPage() {
                 <td className="p-3">{event.workers?.display_name}</td>
                 <td className="p-3">{event.venues?.name}</td>
                 <td className="p-3">£{(event.amount_pence / 100).toFixed(2)}</td>
+                <td className="p-3">{String(event.stripe_status).replaceAll("_", " ")}</td>
                 <td className="p-3">{event.moonbeam_status}</td>
                 <td className="max-w-[220px] truncate p-3">{event.moonbeam_tx_hash ?? "—"}</td>
                 <td className="p-3">{new Date(event.created_at).toLocaleDateString()}</td>
