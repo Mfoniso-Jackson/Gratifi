@@ -5,6 +5,9 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { VenueService } from "@/lib/services/VenueService";
 import { WorkerService } from "@/lib/services/WorkerService";
 import { isQrVisit, recordScan } from "@/lib/services/ScanService";
+import { loadVenueAccess } from "@/lib/billing/access";
+import { PausedVenue } from "@/components/PausedVenue";
+import { sponsorsEnabled } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +23,7 @@ export default async function VenuePage({
   const venue = await new VenueService(db).getBySlug(venueSlug);
   if (venue.error || !venue.data) notFound();
   if (isQrVisit(await searchParams)) await recordScan(db, { venueId: venue.data.id });
+  if (!(await loadVenueAccess(db, venue.data)).takingTips) return <PausedVenue venueName={venue.data.name} />;
   const workers = await new WorkerService(db).listByVenue(venue.data.id);
   const team = workers.data ?? [];
 
@@ -52,6 +56,11 @@ export default async function VenuePage({
             </p>
           )}
         </div>
+        {sponsorsEnabled() && (
+          <p className="mt-6 text-center text-sm">
+            <Link href={`/dreams?venue=${venue.data.slug}`} className="font-medium underline underline-offset-4">See what this team is saving for</Link>
+          </p>
+        )}
         <p className="mt-8 text-center text-sm text-ink/50">No app or account needed · Payments secured by Stripe</p>
       </section>
     </PublicShell>

@@ -3,6 +3,11 @@ import { Avatar, PublicShell, Stat } from "@/components/Shell";
 import { requireStaff } from "@/lib/auth/staff";
 import { createServiceClient } from "@/lib/supabase/server";
 import { isCounted, staffSummary } from "@/lib/services/StaffService";
+import { sponsorsEnabled } from "@/lib/features";
+import { dreamView, latestDreamRow } from "@/lib/dreams/DreamService";
+import { DreamCard } from "@/components/DreamCard";
+import { DreamForm } from "./DreamForm";
+import { withdrawMyDream } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +39,8 @@ export default async function StaffPage() {
   const summary = staffSummary(events);
   const me = workers.at(0);
   const venueNames = workers.map((w) => w.venues?.name).filter(Boolean).join(" and ");
+  const myDream = sponsorsEnabled() ? await latestDreamRow(db, me.id) : null;
+  const myDreamView = myDream && (myDream.status === "active" || myDream.status === "funded") ? await dreamView(db, myDream) : null;
 
   return (
     <PublicShell minimal>
@@ -51,6 +58,40 @@ export default async function StaffPage() {
           <Stat label="All time" value={pounds(summary.allTimePence)} />
           <Stat label="Thank-yous" value={String(summary.thankYous)} />
         </div>
+
+        {sponsorsEnabled() && (
+          <section className="mt-10">
+            <h2 className="text-xl font-semibold">Your dream</h2>
+            <p className="mt-1 text-sm text-ink/60">Something you&apos;re saving for. Customers can put their tip toward it, and a sponsor may match it.</p>
+            <div className="mt-3 grid gap-3">
+              {myDream && myDream.status === "pending" && (
+                <div className="rounded-2xl border border-ink/10 bg-white p-5">
+                  <p className="font-semibold">{myDream.title}</p>
+                  <p className="mt-1 text-sm text-ink/60">Waiting for your manager to approve it.</p>
+                  <form action={withdrawMyDream} className="mt-3">
+                    <input type="hidden" name="dreamId" value={myDream.id} />
+                    <button className="text-sm text-ink/60 underline">Withdraw</button>
+                  </form>
+                </div>
+              )}
+              {myDreamView && (
+                <>
+                  <DreamCard dream={myDreamView} workerName={me.display_name} />
+                  <form action={withdrawMyDream}>
+                    <input type="hidden" name="dreamId" value={myDreamView.id} />
+                    <button className="text-sm text-ink/60 underline">Withdraw my dream</button>
+                  </form>
+                </>
+              )}
+              {myDream?.status === "declined" && (
+                <p className="rounded-xl bg-paper px-4 py-3 text-sm ring-1 ring-ink/10">
+                  Your manager didn&apos;t approve &ldquo;{myDream.title}&rdquo;{myDream.review_note ? `: ${myDream.review_note}` : "."} You can suggest another.
+                </p>
+              )}
+              {(!myDream || myDream.status === "declined" || myDream.status === "funded") && <DreamForm workerId={me.id} />}
+            </div>
+          </section>
+        )}
 
         <h2 className="mt-10 text-xl font-semibold">What customers said</h2>
         <div className="mt-3 grid gap-3">

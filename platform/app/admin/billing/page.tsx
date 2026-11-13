@@ -2,7 +2,7 @@ import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, scopeToVenues } from "@/lib/auth/access";
 import { isDemoMode } from "@/lib/demo/mode";
-import { formatPence, PAYROLL_ADDON_PENCE, pilotDaysLeft, PLANS, priceFor } from "@/lib/billing/plans";
+import { formatPence, PAYROLL_ADDON_PENCE, PLANS, priceFor, venueAccess } from "@/lib/billing/plans";
 import { choosePlan, manageBilling } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   const context = await requireAdmin();
   const params = await searchParams;
   const db = createServiceClient();
-  const venues = ((await scopeToVenues(db.from("venues").select("id, name, created_at"), context, "id").order("name")).data ?? []) as any[];
+  const venues = ((await scopeToVenues(db.from("venues").select("id, name, created_at, billing_exempt"), context, "id").order("name")).data ?? []) as any[];
   const venue = venues.find((v) => v.id === params.venueId) ?? venues.at(0);
 
   if (!venue) {
@@ -36,7 +36,8 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
 
   const subscription = (await db.from("venue_subscriptions").select("*").eq("venue_id", venue.id).maybeSingle()).data as any;
   const live = subscription && ["trialing", "active", "past_due", "unpaid", "incomplete"].includes(subscription.status);
-  const daysLeft = pilotDaysLeft(venue.created_at);
+  const access = venueAccess(venue, subscription);
+  const days = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
 
   return (
     <AdminShell>
@@ -81,12 +82,18 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
           </div>
         ) : (
           <p className="mt-1 text-xl font-semibold">
-            {daysLeft > 0 ? `Free pilot: ${daysLeft} day${daysLeft === 1 ? "" : "s"} left` : "Your free pilot has ended. Choose a plan to keep GratiFi running."}
+            {venue.billing_exempt
+              ? "Not billed: GratiFi has comped this venue."
+              : access.state === "pilot"
+                ? `Free pilot: ${days(access.daysLeft)} left`
+                : access.state === "grace"
+                  ? `Your pilot has ended. Choose a plan within ${days(access.daysLeft)} to keep taking tips.`
+                  : "Not taking tips. Choose a plan to restart straight away; your history is safe."}
           </p>
         )}
       </section>
 
-      {!live && (
+      {!live && !venue.billing_exempt && (
         <>
           <p className="mt-8 text-sm text-ink/70">
             Choose a plan now and you won&apos;t pay until your pilot ends. Yearly plans get two months free.

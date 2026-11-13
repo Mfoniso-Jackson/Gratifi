@@ -5,7 +5,7 @@ Use this checklist after the repo is deployed and before taking live payments.
 ## Supabase
 
 - Create a Supabase project.
-- Run `supabase/migrations/001_initial_gratifi.sql`, then `002_pilot_playbook.sql`, `003_access_control.sql`, `004_qr_scans.sql`, `005_billing_and_signup.sql`, `006_staff_accounts.sql` and `007_sponsors.sql`.
+- Run `supabase/migrations/001_initial_gratifi.sql`, then `002_pilot_playbook.sql`, `003_access_control.sql`, `004_qr_scans.sql`, `005_billing_and_signup.sql`, `006_staff_accounts.sql`, `007_sponsors.sql` and `008_pilot_end_dreams_wall.sql`.
 - In Supabase Auth, set the Site URL to your domain and keep email confirmation on: self-serve venue sign-ups and staff invites both send emails.
 - Turn off public sign-ups in Supabase Auth, or keep them on: accounts without a role in `admin_users` get no access either way.
 - Grant yourself access with `pnpm grant:access <email> admin`, and venue owners with `pnpm grant:access <email> owner <venue-slug>`.
@@ -62,3 +62,5 @@ Use this checklist after the repo is deployed and before taking live payments.
 - Staff sign in at `/staff/login` after a manager invites them from the Staff page.
 - Payroll export is at `/admin/payroll` (Pro, the add-on, or during the pilot).
 - Sponsors and the Dream Fund stay off until legal sign-off. Set them up at `/admin/sponsors`, then set `GRATIFI_SPONSORS_ENABLED=true` to show them to customers.
+- **When a pilot ends without a plan:** venues get a 7-day grace period (`PILOT_GRACE_DAYS`), then stop taking new tips. Their dashboard, history, payroll export and billing keep working, and choosing a plan restarts them at once. Tick "Don't bill this venue" on a venue's admin page for founding pilots you've comped.
+- Staff can propose their own dream at `/staff`; managers approve it on the Staff page. Venue owners can block sponsors on their venue's page. The public Dream Wall is at `/dreams`. All three show only when sponsors are switched on.

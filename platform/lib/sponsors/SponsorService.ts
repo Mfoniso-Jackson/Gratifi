@@ -19,11 +19,13 @@ export interface CampaignReport {
 }
 
 export async function campaignReport(db: any, campaign: any): Promise<CampaignReport> {
-  const [venues, views, dreams] = await Promise.all([
+  const [venues, views, dreams, blocks] = await Promise.all([
     db.from("campaign_venues").select("*").eq("campaign_id", campaign.id),
     db.from("sponsor_views").select("id").eq("campaign_id", campaign.id),
-    db.from("worker_dreams").select("*").eq("sponsor_campaign_id", campaign.id)
+    db.from("worker_dreams").select("*").eq("sponsor_campaign_id", campaign.id),
+    db.from("venue_sponsor_blocks").select("venue_id").eq("sponsor_id", campaign.sponsor_id)
   ]);
+  const blockedVenues = new Set(((blocks.data ?? []) as any[]).map((b) => b.venue_id));
   const dreamRows = (dreams.data ?? []) as any[];
   const dreamIds = dreamRows.map((d) => d.id);
   const contributions = dreamIds.length
@@ -33,7 +35,7 @@ export async function campaignReport(db: any, campaign: any): Promise<CampaignRe
     campaign_id: campaign.id,
     campaign_name: campaign.name,
     status: campaign.status,
-    venues: ((venues.data ?? []) as any[]).filter((v) => !v.blocked).length,
+    venues: ((venues.data ?? []) as any[]).filter((v) => !v.blocked && !blockedVenues.has(v.venue_id)).length,
     views: (views.data ?? []).length,
     dream_linked_tips: contributions.filter((c) => c.recognition_event_id || c.from_tip_pence > 0).length,
     customer_to_dreams_pence: contributions.reduce((s, c) => s + Number(c.from_tip_pence ?? 0), 0),

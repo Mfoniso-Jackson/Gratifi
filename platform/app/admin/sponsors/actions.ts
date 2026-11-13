@@ -100,3 +100,12 @@ export async function withdrawDream(formData: FormData) {
   await createServiceClient().from("worker_dreams").update({ status: "withdrawn" }).eq("id", text(formData.get("dreamId")));
   revalidatePath("/admin/sponsors");
 }
+
+export async function attachDreamToCampaign(formData: FormData) {
+  await requireGlobalAdmin();
+  await createServiceClient()
+    .from("worker_dreams")
+    .update({ sponsor_campaign_id: text(formData.get("campaignId")) || null })
+    .eq("id", text(formData.get("dreamId")));
+  revalidatePath("/admin/sponsors");
+}

@@ -233,6 +233,8 @@ export function buildDemoData(): Record<string, Row[]> {
       target_pence: 45000,
       funded_pence: 31500,
       status: "active",
+      proposed_by: "staff",
+      show_on_wall: true,
       created_at: daysAgo(14)
     },
     {
@@ -244,7 +246,22 @@ export function buildDemoData(): Record<string, Row[]> {
       target_pence: 180000,
       funded_pence: 62000,
       status: "active",
+      proposed_by: "admin",
+      show_on_wall: true,
       created_at: daysAgo(6)
+    },
+    {
+      id: demoUuid("de30f006", 3),
+      worker_id: workers[1].id,
+      sponsor_campaign_id: null,
+      title: "Entry to the regional latte art championship",
+      story: "Two years of practice. Time to compete.",
+      target_pence: 12000,
+      funded_pence: 0,
+      status: "pending",
+      proposed_by: "staff",
+      show_on_wall: true,
+      created_at: daysAgo(1)
     }
   ];
   const dream_contributions: Row[] = [

@@ -3,7 +3,7 @@ import { AdminShell } from "@/components/Shell";
 import { requireGlobalAdmin } from "@/lib/auth/access";
 import { sponsorsEnabled } from "@/lib/features";
 import { createServiceClient } from "@/lib/supabase/server";
-import { createCampaign, createDream, createSponsor, setCampaignStatus, withdrawDream } from "./actions";
+import { attachDreamToCampaign, createCampaign, createDream, createSponsor, setCampaignStatus, withdrawDream } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -121,10 +121,20 @@ export default async function SponsorsPage() {
               <div>
                 <p className="font-semibold">{d.title} <span className="font-normal text-ink/60">· {d.workers?.display_name}</span></p>
                 <p className="text-sm tabular-nums text-ink/60">
-                  {pounds(d.funded_pence)} of {pounds(d.target_pence)} · {d.status}
+                  {pounds(d.funded_pence)} of {pounds(d.target_pence)} · {d.status === "pending" ? "waiting for manager approval" : d.status}{d.proposed_by === "staff" ? " · proposed by staff" : ""}
                   {d.sponsor_campaign_id ? ` · ${campaignRows.find((c) => c.id === d.sponsor_campaign_id)?.name ?? "campaign"}` : " · no sponsor"}
                 </p>
               </div>
+              {["active", "funded"].includes(d.status) && (
+                <form action={attachDreamToCampaign} className="flex items-center gap-2 text-sm">
+                  <input type="hidden" name="dreamId" value={d.id} />
+                  <select id={`attach-${d.id}`} name="campaignId" defaultValue={d.sponsor_campaign_id ?? ""} aria-label="Sponsor campaign" className="rounded-md border border-ink/15 bg-white px-2 py-1">
+                    <option value="">No sponsor</option>
+                    {campaignRows.filter((c) => c.status !== "ended").map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <button className="underline">Save</button>
+                </form>
+              )}
               {d.status !== "withdrawn" && (
                 <form action={withdrawDream}>
                   <input type="hidden" name="dreamId" value={d.id} />
