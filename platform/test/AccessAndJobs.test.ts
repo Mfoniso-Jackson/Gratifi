@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoClient } from "@/lib/demo/client";
 import { canAccessVenue, loadAccess, scopeToVenues, type AdminContext } from "@/lib/auth/access";
-import { isQrVisit, recordScan, scanToTipRate } from "@/lib/services/ScanService";
+import { countBySource, isQrVisit, recordScan, scanToTipRate, visitSource } from "@/lib/services/ScanService";
 import { QRService } from "@/lib/services/QRService";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { GET as retryJob } from "@/app/api/cron/retry-anchoring/route";
@@ -63,6 +63,22 @@ describe("QR scans", () => {
     expect(new QRService().venueUrl("demo-cafe")).toMatch(/\/v\/demo-cafe\?src=qr$/);
     expect(isQrVisit({ src: "qr" })).toBe(true);
     expect(isQrVisit({})).toBe(false);
+  });
+
+  it("tags NFC links and tells taps from scans", async () => {
+    expect(new QRService().workerUrl("abc", "nfc")).toMatch(/\/tip\/abc\?src=nfc$/);
+    expect(visitSource({ src: "nfc" })).toBe("nfc");
+    expect(visitSource({ src: "qr" })).toBe("qr");
+    expect(visitSource({ src: "email" })).toBeNull();
+
+    const db = createDemoClient({ env: {} });
+    const before = countBySource((await db.from("qr_scans").select("*")).data);
+    await recordScan(db, { venueId: CAFE, source: "nfc" });
+    await recordScan(db, { venueId: CAFE });
+    const after = countBySource((await db.from("qr_scans").select("*")).data);
+    expect(after.nfc).toBe(before.nfc + 1);
+    expect(after.qr).toBe(before.qr + 1);
+    expect(countBySource([{ source: null }, { source: "nfc" }])).toEqual({ qr: 1, nfc: 1, total: 2 });
   });
 
   it("records a scan and never throws when it fails", async () => {

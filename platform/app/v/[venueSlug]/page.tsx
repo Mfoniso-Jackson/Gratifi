@@ -4,7 +4,7 @@ import { Avatar, PublicShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { VenueService } from "@/lib/services/VenueService";
 import { WorkerService } from "@/lib/services/WorkerService";
-import { isQrVisit, recordScan } from "@/lib/services/ScanService";
+import { recordScan, visitSource } from "@/lib/services/ScanService";
 import { loadVenueAccess } from "@/lib/billing/access";
 import { PausedVenue } from "@/components/PausedVenue";
 import { sponsorsEnabled } from "@/lib/features";
@@ -22,7 +22,8 @@ export default async function VenuePage({
   const db = createServiceClient();
   const venue = await new VenueService(db).getBySlug(venueSlug);
   if (venue.error || !venue.data) notFound();
-  if (isQrVisit(await searchParams)) await recordScan(db, { venueId: venue.data.id });
+  const source = visitSource(await searchParams);
+  if (source) await recordScan(db, { venueId: venue.data.id, source });
   if (!(await loadVenueAccess(db, venue.data)).takingTips) return <PausedVenue venueName={venue.data.name} />;
   const workers = await new WorkerService(db).listByVenue(venue.data.id);
   const team = workers.data ?? [];

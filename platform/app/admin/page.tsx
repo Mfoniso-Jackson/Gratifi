@@ -3,7 +3,7 @@ import { AdminShell, Avatar, Stat } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, scopeToVenues } from "@/lib/auth/access";
 import { REVERSED_STRIPE_STATUSES } from "@/lib/services/StripeWebhookHandler";
-import { scanToTipRate } from "@/lib/services/ScanService";
+import { countBySource, scanToTipRate } from "@/lib/services/ScanService";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -25,8 +25,9 @@ export default async function AdminPage() {
 
   // Scans and tips over the last 30 days, for the scan-to-tip rate.
   const since = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
-  const scanResult = await scopeToVenues(db.from("qr_scans").select("created_at"), context);
-  const scans30 = (scanResult.data ?? []).filter((scan: { created_at: string }) => scan.created_at >= since).length;
+  const scanResult = await scopeToVenues(db.from("qr_scans").select("created_at, source"), context);
+  const visits30 = countBySource((scanResult.data ?? []).filter((scan: { created_at: string }) => scan.created_at >= since));
+  const scans30 = visits30.total;
   const tips30 = rows.filter((event) => event.created_at >= since).length;
   const rate = scanToTipRate(scans30, tips30);
 
@@ -37,7 +38,7 @@ export default async function AdminPage() {
         <Stat label="Recognitions" value={String(rows.length)} />
         <Stat label="Total" value={`£${(total / 100).toFixed(2)}`} />
         <Stat label="Pending anchoring" value={String(rows.filter((e) => e.anchor_status !== "confirmed").length)} />
-        <Stat label="QR scans (30 days)" value={String(scans30)} />
+        <Stat label="Scans and taps (30 days)" value={`${scans30}${visits30.nfc ? ` · ${visits30.nfc} NFC` : ""}`} />
         <Stat label="Scans that led to a tip" value={rate === null ? "No scans yet" : `${rate}%`} />
       </div>
 

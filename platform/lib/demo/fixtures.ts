@@ -277,6 +277,8 @@ export function buildDemoData(): Record<string, Row[]> {
       id: demoUuid("de30a99a", i * 3 + n + 1),
       venue_id: event.venue_id,
       worker_id: n === 0 ? event.worker_id : null,
+      // Some staff wear NFC badges, so a share of visits are taps rather than QR scans.
+      source: n === 0 && i % 3 === 0 ? "nfc" : "qr",
       created_at: new Date(Date.parse(event.created_at) - (n + 1) * 7 * 60 * 1000).toISOString()
     }))
   );

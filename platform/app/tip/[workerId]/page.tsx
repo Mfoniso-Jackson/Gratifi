@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Avatar, PublicShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { WorkerService } from "@/lib/services/WorkerService";
-import { isQrVisit, recordScan } from "@/lib/services/ScanService";
+import { recordScan, visitSource } from "@/lib/services/ScanService";
 import { loadVenueAccess } from "@/lib/billing/access";
 import { PausedVenue } from "@/components/PausedVenue";
 import { DreamCard } from "@/components/DreamCard";
@@ -24,7 +24,8 @@ export default async function TipPage({
   const db = createServiceClient();
   const worker = await new WorkerService(db).get(workerId);
   if (worker.error || !worker.data) notFound();
-  if (isQrVisit(await searchParams)) await recordScan(db, { venueId: worker.data.venue_id, workerId: worker.data.id });
+  const source = visitSource(await searchParams);
+  if (source) await recordScan(db, { venueId: worker.data.venue_id, workerId: worker.data.id, source });
   const venue = worker.data.venues;
   if (venue && !(await loadVenueAccess(db, venue)).takingTips) return <PausedVenue venueName={venue.name} />;
   const dream = await getDream(db, worker.data.id);

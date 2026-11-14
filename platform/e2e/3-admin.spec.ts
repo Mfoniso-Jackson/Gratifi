@@ -53,3 +53,19 @@ test("a customer's deletion request is received and handled", async ({ page }) =
   await page.getByRole("button", { name: "Erase selected" }).click();
   await expect(page.getByText(/Erased 0 staff record\(s\) and 1 tip note\(s\)/)).toBeVisible();
 });
+
+test("an NFC tap opens the tip page and shows on the staff card", async ({ page }) => {
+  const MAYA = "de30b002-0000-4000-8000-000000000001";
+  await page.goto("/admin/workers");
+  await page.getByRole("link", { name: "QR and NFC card" }).first().click();
+  await expect(page.getByRole("heading", { name: /tip card/ })).toBeVisible();
+  await page.goto(`/admin/workers/${MAYA}/card`);
+  const before = Number((await page.getByText(/NFC taps?\./).textContent())?.match(/(\d+) NFC/)?.[1]);
+  await expect(page.getByLabel("NFC link")).toHaveValue(new RegExp(`/tip/${MAYA}\\?src=nfc$`));
+
+  await page.goto(`/tip/${MAYA}?src=nfc`);
+  await expect(page.getByText("Maya").first()).toBeVisible();
+
+  await page.goto(`/admin/workers/${MAYA}/card`);
+  await expect(page.getByText(`${before + 1} NFC tap`)).toBeVisible();
+});

@@ -102,8 +102,8 @@ export async function AdminShell({ children, nav = true }: { children: React.Rea
   return (
     <main className="min-h-screen bg-[#f6f7f2] text-ink">
       <DemoBanner />
-      <div className={`mx-auto grid max-w-7xl gap-6 px-5 py-6 ${nav ? "md:grid-cols-[220px_1fr]" : ""}`}>
-        <aside className={nav ? "md:sticky md:top-6 md:h-[calc(100vh-48px)]" : ""}>
+      <div className={`mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 py-6 ${nav ? "md:grid-cols-[220px_1fr]" : ""}`}>
+        <aside className={`min-w-0 ${nav ? "md:sticky md:top-6 md:h-[calc(100vh-48px)]" : ""}`}>
           <Link href="/" aria-label="GratiFi home">
             <Logo />
           </Link>
