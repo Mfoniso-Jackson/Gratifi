@@ -3,7 +3,8 @@ import { AdminShell, Stat } from "@/components/Shell";
 import { requireGlobalAdmin } from "@/lib/auth/access";
 import { createServiceClient } from "@/lib/supabase/server";
 import { campaignReport } from "@/lib/sponsors/SponsorService";
-import { replaceLogo } from "../actions";
+import { replaceLogo, sendInvoice, setBillingEmail } from "../actions";
+import { StatusPill } from "@/components/StatusPill";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,12 @@ export default async function SponsorReportPage({ params }: { params: Promise<{ 
   if (!sponsor) notFound();
   const campaigns = ((await db.from("sponsor_campaigns").select("*").eq("sponsor_id", sponsorId)).data ?? []) as any[];
   const reports = await Promise.all(campaigns.map((c) => campaignReport(db, c)));
+  const invoices = ((await db.from("sponsor_invoices").select("*").eq("sponsor_id", sponsorId).order("created_at", { ascending: false })).data ?? []) as any[];
+  const outstanding = invoices.filter((i) => i.status === "open").reduce((sum, i) => sum + i.amount_pence, 0);
+  const paid = invoices.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amount_pence, 0);
+  const firstLive = campaigns.find((c) => c.status === "live") ?? campaigns.at(0);
+  const month = new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <AdminShell>
@@ -51,6 +58,73 @@ export default async function SponsorReportPage({ params }: { params: Promise<{ 
         </section>
       ))}
       <p className="mt-6 text-sm text-ink/60">Counts only. Individual staff tips and notes are never shared with sponsors.</p>
+
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold">Billing</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          Placement fees are invoiced through Stripe, which emails the invoice and takes payment. Dream fund money isn&apos;t invoiced here
+          until the payments advice is in.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Stat label="Outstanding" value={pounds(outstanding)} />
+          <Stat label="Paid" value={pounds(paid)} />
+        </div>
+
+        <form action={setBillingEmail} className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-ink/10 bg-white p-4">
+          <input type="hidden" name="sponsorId" value={sponsor.id} />
+          <label className="grid gap-1 text-sm">Billing email
+            <input id="billing-email" name="billingEmail" type="email" required defaultValue={sponsor.billing_email ?? ""} className="rounded-md border border-ink/15 px-3 py-2" />
+          </label>
+          <button className="rounded-md border border-ink/15 px-4 py-2">Save</button>
+        </form>
+
+        <form action={sendInvoice} className="mt-3 grid gap-3 rounded-xl border border-ink/10 bg-white p-4 md:grid-cols-[1fr_1fr_2fr_auto_auto] md:items-end">
+          <input type="hidden" name="sponsorId" value={sponsor.id} />
+          <label className="grid gap-1 text-sm">Campaign
+            <select id="invoice-campaign" name="campaignId" defaultValue={firstLive?.id ?? ""} className="rounded-md border border-ink/15 bg-white px-3 py-2">
+              <option value="">None</option>
+              {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 text-sm">Amount (£)
+            <input id="invoice-amount" name="amount" inputMode="decimal" required defaultValue={firstLive?.placement_fee_pence ? (firstLive.placement_fee_pence / 100).toFixed(2) : ""} className="rounded-md border border-ink/15 px-3 py-2" />
+          </label>
+          <label className="grid gap-1 text-sm">Description
+            <input id="invoice-description" name="description" required defaultValue={`GratiFi placement fee: ${firstLive?.name ?? "campaign"}, ${month}`} className="rounded-md border border-ink/15 px-3 py-2" />
+          </label>
+          <label className="grid gap-1 text-sm">Due in
+            <select id="invoice-due" name="daysUntilDue" defaultValue="14" className="rounded-md border border-ink/15 bg-white px-3 py-2">
+              <option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option>
+            </select>
+          </label>
+          <button disabled={!sponsor.billing_email} className="rounded-md bg-ink px-4 py-2 text-white disabled:opacity-50">Send invoice</button>
+        </form>
+        {!sponsor.billing_email && <p className="mt-2 text-sm text-ink/60">Add a billing email to send invoices.</p>}
+
+        <div className="mt-3 overflow-x-auto rounded-xl border border-ink/10 bg-white">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="bg-[#eef4f1]"><tr>{["Sent", "Description", "Amount", "Due", "Status", ""].map((h) => <th key={h} className="p-3">{h}</th>)}</tr></thead>
+            <tbody>
+              {invoices.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink/60">No invoices yet.</td></tr>}
+              {invoices.map((invoice) => (
+                <tr key={invoice.id} className="border-t border-ink/10 tabular-nums">
+                  <td className="p-3">{new Date(invoice.created_at).toLocaleDateString("en-GB")}</td>
+                  <td className="p-3">{invoice.description}</td>
+                  <td className="p-3">{pounds(invoice.amount_pence)}</td>
+                  <td className="p-3">{invoice.due_on ? new Date(invoice.due_on).toLocaleDateString("en-GB") : "—"}</td>
+                  <td className="p-3">
+                    {invoice.status === "paid" ? <StatusPill tone="good">Paid</StatusPill>
+                      : invoice.status === "open" && invoice.due_on && invoice.due_on < today ? <StatusPill tone="bad">Overdue</StatusPill>
+                      : invoice.status === "open" ? <StatusPill tone="warn">Awaiting payment</StatusPill>
+                      : <StatusPill tone="neutral">{invoice.status}</StatusPill>}
+                  </td>
+                  <td className="p-3">{invoice.hosted_invoice_url && <a href={invoice.hosted_invoice_url} target="_blank" rel="noreferrer" className="underline">View</a>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <form action={replaceLogo} className="mt-8 flex flex-wrap items-end gap-3 rounded-xl border border-ink/10 bg-white p-4">
         <input type="hidden" name="sponsorId" value={sponsor.id} />

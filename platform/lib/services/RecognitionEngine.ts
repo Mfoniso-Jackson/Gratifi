@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { appConfig, protocolVersion } from "@/lib/config";
 import { HashService } from "@/lib/services/HashService";
-import { MoonbeamService } from "@/lib/services/MoonbeamService";
+import { ChainService } from "@/lib/services/ChainService";
 import type { RecognitionPayload } from "@/lib/types/domain";
 
 const RecognitionSchema = z.object({
@@ -18,7 +18,7 @@ export class RecognitionEngine {
   constructor(
     private readonly db: any,
     private readonly hashService = new HashService(),
-    private readonly moonbeamService = new MoonbeamService()
+    private readonly chainService = new ChainService()
   ) {}
 
   validate(payload: RecognitionPayload) {
@@ -58,8 +58,8 @@ export class RecognitionEngine {
         recognition_hash: recognitionHash,
         stripe_payment_intent_id: valid.stripePaymentIntentId,
         stripe_status: valid.stripeStatus,
-        moonbeam_status: "pending",
-        moonbeam_contract_address: appConfig.moonbeam.contractAddress || null,
+        anchor_status: "pending",
+        anchor_contract_address: appConfig.chain.contractAddress || null,
         protocol_version: protocolVersion
       })
       .select("*")
@@ -71,7 +71,7 @@ export class RecognitionEngine {
 
   async anchor(event: any) {
     try {
-      const result = await this.moonbeamService.recordRecognition({
+      const result = await this.chainService.recordRecognition({
         recognitionHash: event.recognition_hash,
         venueHash: this.hashService.entityHash(event.venue_id),
         workerHash: this.hashService.entityHash(event.worker_id),
@@ -82,9 +82,11 @@ export class RecognitionEngine {
       const update = await this.db
         .from("recognition_events")
         .update({
-          moonbeam_status: "confirmed",
-          moonbeam_tx_hash: result.txHash,
-          moonbeam_block_number: result.blockNumber,
+          anchor_status: "confirmed",
+          anchor_tx_hash: result.txHash,
+          anchor_block_number: result.blockNumber,
+          anchor_chain_id: result.chainId,
+          anchor_contract_address: appConfig.chain.contractAddress || null,
           confirmed_at: new Date().toISOString()
         })
         .eq("id", event.id)
@@ -94,8 +96,8 @@ export class RecognitionEngine {
       if (update.error) throw update.error;
       return update.data;
     } catch (error) {
-      await this.db.from("recognition_events").update({ moonbeam_status: "retry" }).eq("id", event.id);
-      return { ...event, moonbeam_status: "retry" };
+      await this.db.from("recognition_events").update({ anchor_status: "retry" }).eq("id", event.id);
+      return { ...event, anchor_status: "retry" };
     }
   }
 
@@ -109,8 +111,8 @@ export class RecognitionEngine {
     const cutoff = new Date((options.now ?? new Date()).getTime() - staleMinutes * 60_000).toISOString();
 
     const [retry, pending] = await Promise.all([
-      this.db.from("recognition_events").select("*").eq("moonbeam_status", "retry").order("created_at").limit(limit),
-      this.db.from("recognition_events").select("*").eq("moonbeam_status", "pending").order("created_at").limit(limit)
+      this.db.from("recognition_events").select("*").eq("anchor_status", "retry").order("created_at").limit(limit),
+      this.db.from("recognition_events").select("*").eq("anchor_status", "pending").order("created_at").limit(limit)
     ]);
     if (retry.error) throw retry.error;
     if (pending.error) throw pending.error;
@@ -122,7 +124,7 @@ export class RecognitionEngine {
     let confirmed = 0;
     for (const event of due) {
       const result = await this.anchor(event);
-      if (result?.moonbeam_status === "confirmed") confirmed += 1;
+      if (result?.anchor_status === "confirmed") confirmed += 1;
     }
     return { attempted: due.length, confirmed, stillFailing: due.length - confirmed };
   }

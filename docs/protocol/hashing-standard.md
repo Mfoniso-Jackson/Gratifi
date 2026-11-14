@@ -39,7 +39,7 @@ Blank messages are represented by the hash of an empty string.
 
 ## Entity Hashes
 
-Venue and worker IDs are operational identifiers. They are not submitted directly to Moonbeam.
+Venue and worker IDs are operational identifiers. They are not submitted directly on-chain.
 
 ```text
 venueHash = keccak256(utf8(venue_id))

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -137,6 +138,7 @@ export default async function WorkersPage() {
             <div>
               <p className="font-semibold">{worker.display_name}</p>
               <p className="text-sm text-ink/60">{worker.role} at {worker.venues?.name}</p>
+              <Link href={`/admin/workers/${worker.id}/card`} className="text-sm underline underline-offset-2">QR and NFC card</Link>
             </div>
             {worker.user_id ? (
               <form action={removeStaffAccess} className="flex items-center gap-3 text-sm">

@@ -57,7 +57,8 @@ export async function POST(request: Request) {
     venueId,
     amountPence,
     message,
-    dreamLinked: form.get("dreamLinked") === "on"
+    dreamLinked: form.get("dreamLinked") === "on",
+    coverFee: form.get("coverFee") === "on"
   });
   if (!session.url) return protocolError("Stripe did not return a checkout URL", 500);
   return NextResponse.redirect(session.url, 303);

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDemoClient } from "@/lib/demo/client";
 import { canAccessVenue, loadAccess, scopeToVenues, type AdminContext } from "@/lib/auth/access";
-import { isQrVisit, recordScan, scanToTipRate } from "@/lib/services/ScanService";
+import { countBySource, isQrVisit, recordScan, scanToTipRate, visitSource } from "@/lib/services/ScanService";
 import { QRService } from "@/lib/services/QRService";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { GET as retryJob } from "@/app/api/cron/retry-anchoring/route";
@@ -65,6 +65,22 @@ describe("QR scans", () => {
     expect(isQrVisit({})).toBe(false);
   });
 
+  it("tags NFC links and tells taps from scans", async () => {
+    expect(new QRService().workerUrl("abc", "nfc")).toMatch(/\/tip\/abc\?src=nfc$/);
+    expect(visitSource({ src: "nfc" })).toBe("nfc");
+    expect(visitSource({ src: "qr" })).toBe("qr");
+    expect(visitSource({ src: "email" })).toBeNull();
+
+    const db = createDemoClient({ env: {} });
+    const before = countBySource((await db.from("qr_scans").select("*")).data);
+    await recordScan(db, { venueId: CAFE, source: "nfc" });
+    await recordScan(db, { venueId: CAFE });
+    const after = countBySource((await db.from("qr_scans").select("*")).data);
+    expect(after.nfc).toBe(before.nfc + 1);
+    expect(after.qr).toBe(before.qr + 1);
+    expect(countBySource([{ source: null }, { source: "nfc" }])).toEqual({ qr: 1, nfc: 1, total: 2 });
+  });
+
   it("records a scan and never throws when it fails", async () => {
     const db = createDemoClient({ env: {} });
     const before = (await db.from("qr_scans").select("*")).data.length;
@@ -108,16 +124,16 @@ describe("automatic anchoring retries", () => {
     const response = await retryJob(request);
     expect(response.status).toBe(200);
     const body = await response.json();
-    // Moonbeam isn't configured in tests, so attempts are made but stay failing.
+    // The chain isn't configured in tests, so attempts are made but stay failing.
     expect(body.attempted).toBeGreaterThanOrEqual(1);
     expect(body.confirmed).toBe(0);
   });
 
   it("leaves recently created pending recognitions alone", async () => {
     const db = createDemoClient({ env: {} });
-    await db.from("recognition_events").update({ moonbeam_status: "confirmed" }).eq("moonbeam_status", "retry");
+    await db.from("recognition_events").update({ anchor_status: "confirmed" }).eq("anchor_status", "retry");
     const recent = new Date().toISOString();
-    await db.from("recognition_events").update({ created_at: recent }).eq("moonbeam_status", "pending");
+    await db.from("recognition_events").update({ created_at: recent }).eq("anchor_status", "pending");
     const result = await new RecognitionEngine(db).retryStuck({ staleMinutes: 10 });
     expect(result.attempted).toBe(0);
   });

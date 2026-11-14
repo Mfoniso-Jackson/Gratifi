@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { AdminShell } from "@/components/Shell";
 import { createServiceClient } from "@/lib/supabase/server";
 import { QRService } from "@/lib/services/QRService";
+import { CopyField } from "@/components/CopyField";
+import { NfcSteps } from "@/components/NfcSteps";
 import { canAccessVenue, requireAdmin } from "@/lib/auth/access";
 import { appConfig } from "@/lib/config";
 import { referralLink } from "@/lib/services/SignupService";
@@ -99,15 +101,24 @@ export default async function VenueAdminPage({
           <button className="rounded-md border border-ink/15 px-3 py-1">Save</button>
         </form>
       )}
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-md border border-ink/10 bg-white p-5">
           <p className="text-sm text-ink/60">Venue QR</p>
-          <div className="mt-4 max-w-xs" dangerouslySetInnerHTML={{ __html: svg }} />
+          <div className="mt-4 max-w-xs [&_svg]:h-auto [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
         <div className="grid content-start gap-6">
           <div className="rounded-md border border-ink/10 bg-white p-5">
             <p className="font-semibold">Print card URL</p>
             <p className="mt-2 break-all text-sm text-ink/70">{qr.venueUrl(venue.data.slug)}</p>
+          </div>
+          <div className="rounded-md border border-ink/10 bg-white p-5">
+            <p className="font-semibold">NFC tap point</p>
+            <p className="mt-1 text-sm text-ink/70">
+              Write this link to an NFC sticker for the counter or tables. Customers tap their phone to choose who to thank.
+              Each staff member can also have their own badge from the <Link href="/admin/workers" className="underline">Staff</Link> page.
+            </p>
+            <div className="mt-3"><CopyField value={qr.venueUrl(venue.data.slug, "nfc")} label="NFC link" /></div>
+            <NfcSteps />
           </div>
           {code && (
             <div className="rounded-md border border-ink/10 bg-white p-5">

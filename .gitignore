@@ -223,3 +223,7 @@ typechain-types/
 
 # macOS
 .DS_Store
+
+# Playwright
+platform/test-results/
+platform/playwright-report/

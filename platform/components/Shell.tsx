@@ -42,7 +42,10 @@ export function PublicShell({ children, minimal = false }: { children: React.Rea
       <div className="flex-1">{children}</div>
       <footer className="mx-auto w-full max-w-6xl px-5 py-8 text-sm text-ink/50">
         <div className="flex flex-col justify-between gap-2 border-t border-ink/10 pt-6 sm:flex-row">
-          <span>© {new Date().getFullYear()} GratiFi</span>
+          <span>
+            © {new Date().getFullYear()} GratiFi ·{" "}
+            <Link href="/privacy/requests" className="underline underline-offset-2 hover:text-ink">Your data</Link>
+          </span>
           <span>Payments secured by Stripe. No customer account needed.</span>
         </div>
       </footer>
@@ -92,14 +95,15 @@ export async function AdminShell({ children, nav = true }: { children: React.Rea
     ["/admin/events", "Tips", true],
     ["/admin/payroll", "Payroll", true],
     ["/admin/billing", "Billing", true],
-    ["/admin/protocol", "Protocol", isAdmin]
+    ["/admin/protocol", "Protocol", isAdmin],
+    ["/admin/data-requests", "Data requests", isAdmin]
   ].filter(([, , visible]) => visible) as Array<[string, string, boolean]>;
 
   return (
     <main className="min-h-screen bg-[#f6f7f2] text-ink">
       <DemoBanner />
-      <div className={`mx-auto grid max-w-7xl gap-6 px-5 py-6 ${nav ? "md:grid-cols-[220px_1fr]" : ""}`}>
-        <aside className={nav ? "md:sticky md:top-6 md:h-[calc(100vh-48px)]" : ""}>
+      <div className={`mx-auto grid max-w-7xl grid-cols-1 gap-6 px-5 py-6 ${nav ? "md:grid-cols-[220px_1fr]" : ""}`}>
+        <aside className={`min-w-0 ${nav ? "md:sticky md:top-6 md:h-[calc(100vh-48px)]" : ""}`}>
           <Link href="/" aria-label="GratiFi home">
             <Logo />
           </Link>

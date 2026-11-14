@@ -1,14 +1,18 @@
 import QRCode from "qrcode";
 import { appConfig } from "@/lib/config";
-import { QR_SOURCE_PARAM, QR_SOURCE_VALUE } from "@/lib/services/ScanService";
+import { QR_SOURCE_PARAM, type VisitSource } from "@/lib/services/ScanService";
 
+/**
+ * Links printed on QR cards and written to NFC tags. Both open the same page; the `src` tag only
+ * tells GratiFi which one the customer used.
+ */
 export class QRService {
-  venueUrl(slug: string) {
-    return `${appConfig.appUrl}/v/${slug}?${QR_SOURCE_PARAM}=${QR_SOURCE_VALUE}`;
+  venueUrl(slug: string, source: VisitSource = "qr") {
+    return `${appConfig.appUrl}/v/${slug}?${QR_SOURCE_PARAM}=${source}`;
   }
 
-  workerUrl(workerId: string) {
-    return `${appConfig.appUrl}/tip/${workerId}?${QR_SOURCE_PARAM}=${QR_SOURCE_VALUE}`;
+  workerUrl(workerId: string, source: VisitSource = "qr") {
+    return `${appConfig.appUrl}/tip/${workerId}?${QR_SOURCE_PARAM}=${source}`;
   }
 
   toSvg(url: string) {

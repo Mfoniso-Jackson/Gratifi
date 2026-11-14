@@ -1,8 +1,10 @@
-# Moonbeam Contract Specification
+# Contract Specification
+
+> Moonbeam shut down in 2026. The same contract now runs on Base (chain 8453); see platform/docs/base-deployment.md. This file keeps its old name so existing links work.
 
 ## Contract
 
-`GratiFiProtocol.sol` records immutable recognition hashes on Moonbeam.
+`GratiFiProtocol.sol` records immutable recognition hashes on Base (previously Moonbeam).
 
 The contract is intentionally small. It does not process payments, manage customer accounts, issue tokens, mint NFTs, or store raw personal data.
 
@@ -85,7 +87,7 @@ Recommended sequence:
 1. Deploy to Moonbase Alpha.
 2. Run test Stripe payments through the full application flow.
 3. Confirm events appear in Supabase and Moonbase explorer.
-4. Deploy to Moonbeam mainnet.
+4. Deploy to Base mainnet.
 5. Update `GRATIFI_PROTOCOL_CONTRACT_ADDRESS`.
 6. Confirm `/admin/protocol` reads the deployed contract.
 

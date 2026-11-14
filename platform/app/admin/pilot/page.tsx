@@ -16,7 +16,7 @@ export default async function PilotDashboardPage() {
       qrCodes: acc.qrCodes + item.qrCodesGenerated,
       recognitions: acc.recognitions + item.recognitionCount,
       tipPence: acc.tipPence + item.totalTipPence,
-      confirmed: acc.confirmed + item.moonbeamConfirmationRate * item.recognitionCount,
+      confirmed: acc.confirmed + item.anchorConfirmationRate * item.recognitionCount,
       stripeSuccess: acc.stripeSuccess + item.stripeSuccessRate * item.recognitionCount
     }),
     { venues: 0, workers: 0, qrCodes: 0, recognitions: 0, tipPence: 0, confirmed: 0, stripeSuccess: 0 }
@@ -44,7 +44,7 @@ export default async function PilotDashboardPage() {
 
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <Stat label="Recognition events" value={String(totals.recognitions)} />
-        <Stat label="Moonbeam confirmation rate" value={percent(confirmationRate)} />
+        <Stat label="On-chain record rate" value={percent(confirmationRate)} />
         <Stat label="Stripe success rate" value={percent(stripeRate)} />
       </div>
 
@@ -52,7 +52,7 @@ export default async function PilotDashboardPage() {
         <table className="w-full min-w-[980px] text-left text-sm">
           <thead className="bg-[#eef4f1]">
             <tr>
-              {["Venue", "Type", "Status", "Workers", "QRs", "Events", "Tip volume", "Moonbeam", "Stripe", "Follow-up"].map((h) => (
+              {["Venue", "Type", "Status", "Workers", "QRs", "Events", "Tip volume", "On-chain", "Stripe", "Follow-up"].map((h) => (
                 <th key={h} className="p-3">{h}</th>
               ))}
             </tr>
@@ -70,7 +70,7 @@ export default async function PilotDashboardPage() {
                 <td className="p-3">{item.qrCodesGenerated}</td>
                 <td className="p-3">{item.recognitionCount}</td>
                 <td className="p-3">£{formatMoney(item.totalTipPence)}</td>
-                <td className="p-3">{percent(item.moonbeamConfirmationRate)}</td>
+                <td className="p-3">{percent(item.anchorConfirmationRate)}</td>
                 <td className="p-3">{percent(item.stripeSuccessRate)}</td>
                 <td className="p-3">{item.venue.follow_up_date ?? "Not set"}</td>
               </tr>

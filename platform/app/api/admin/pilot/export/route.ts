@@ -16,7 +16,7 @@ export async function GET() {
     qr_codes_generated: "",
     recognition_events: "",
     total_tip_volume_gbp: "",
-    moonbeam_confirmation_rate: "",
+    anchor_confirmation_rate: "",
     stripe_success_rate: "",
     follow_up_date: ""
   });

@@ -138,9 +138,13 @@ Example response:
   "apiVersion": "v1",
   "data": {
     "recognition_hash": "0x...",
-    "moonbeam_status": "confirmed",
-    "moonbeam_tx_hash": "0xabc123...",
-    "moonbeam_block_number": 1234567,
+    "anchor_status": "confirmed",
+    "anchor_tx_hash": "0xabc123...",
+    "anchor_block_number": 1234567,
+    "anchor_chain_id": 8453,
+    "network": "Base",
+    "network_retired": false,
+    "explorer_url": "https://basescan.org/tx/0xabc123...",
     "confirmed_at": "2026-07-09T10:00:30.000Z",
     "protocol_version": "gratifi-v1"
   },

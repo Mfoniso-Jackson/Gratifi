@@ -2,7 +2,7 @@
 
 GratiFi is production-ready recognition infrastructure for hospitality and service venues.
 
-The `platform/` app is a Next.js 15, Supabase, Stripe, Solidity, and Moonbeam implementation of walletless customer recognition.
+The `platform/` app is a Next.js 15, Supabase, Stripe, Solidity, and Base (Ethereum layer 2) implementation of walletless customer recognition.
 
 Core flow:
 
@@ -11,7 +11,7 @@ Core flow:
 3. Customer leaves a recognition amount and optional thank-you message.
 4. Stripe verifies payment server-side.
 5. Supabase stores the recognition event.
-6. Moonbeam anchors the deterministic recognition hash.
+6. Base anchors the deterministic recognition hash.
 7. Admins can verify, retry, export, and monitor recognition events.
 
 Start here:

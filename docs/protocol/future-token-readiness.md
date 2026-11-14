@@ -4,7 +4,7 @@
 
 GratiFi is token-ready but not token-dependent.
 
-No token is implemented in v1. Recognition events, venue onboarding, QR deployment, payments, Supabase storage, and Moonbeam anchoring all work without a token.
+No token is implemented in v1. Recognition events, venue onboarding, QR deployment, payments, Supabase storage, and Base anchoring all work without a token.
 
 ## Why Token-Ready Architecture Matters
 
@@ -50,7 +50,7 @@ v1 already supports future modules through:
 
 - `protocol_version`;
 - deterministic `recognition_hash`;
-- Moonbeam contract anchoring;
+- Base contract anchoring;
 - clear API versioning;
 - isolated service layers;
 - Supabase ledger history;

@@ -28,7 +28,7 @@ The customer-facing UX must avoid:
 
 ## On-Chain Data
 
-The Moonbeam contract stores hashes and amount data required for verification. It does not store:
+The GratiFiProtocol contract (on Base) stores hashes and amount data required for verification. It does not store:
 
 - customer names;
 - customer emails;

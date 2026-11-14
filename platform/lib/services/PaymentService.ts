@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { appConfig } from "@/lib/config";
+import { coverFeePence } from "@/lib/payments/fees";
 
 export class PaymentService {
   private client: Stripe | undefined;
@@ -20,10 +21,14 @@ export class PaymentService {
     amountPence: number;
     message?: string | null;
     dreamLinked?: boolean;
+    /** The customer chose to add the card fee so the staff member gets the whole tip. */
+    coverFee?: boolean;
   }) {
     if (input.amountPence < appConfig.minTipAmountPence || input.amountPence > appConfig.maxTipAmountPence) {
       throw new Error("Amount is outside configured recognition limits.");
     }
+
+    const feePence = input.coverFee ? coverFeePence(input.amountPence) : 0;
 
     return this.stripe.checkout.sessions.create({
       mode: "payment",
@@ -36,13 +41,19 @@ export class PaymentService {
             unit_amount: input.amountPence,
             product_data: { name: "Recognition" }
           }
-        }
+        },
+        ...(feePence > 0
+          ? [{ quantity: 1, price_data: { currency: "gbp", unit_amount: feePence, product_data: { name: "Card fee, so the full tip goes to staff" } } }]
+          : [])
       ],
       metadata: {
         workerId: input.workerId,
         venueId: input.venueId,
         message: input.message ?? "",
-        dreamLinked: input.dreamLinked ? "true" : "false"
+        dreamLinked: input.dreamLinked ? "true" : "false",
+        // The tip itself; amount_total also includes any card fee the customer chose to cover.
+        tipPence: String(input.amountPence),
+        coverFeePence: String(feePence)
       },
       success_url: `${appConfig.appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appConfig.appUrl}/tip/${input.workerId}`

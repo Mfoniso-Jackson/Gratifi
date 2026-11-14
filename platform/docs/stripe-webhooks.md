@@ -17,6 +17,7 @@ Subscribe to:
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
+- `invoice.paid`, `invoice.voided`, `invoice.marked_uncollectible` (sponsor invoices)
 
 For "Manage billing" to work, switch on the customer portal in the Stripe dashboard (Settings, Billing, Customer portal).
 
@@ -28,6 +29,17 @@ The webhook handler:
 4. Stores and anchors the recognition.
 5. Marks failed chain writes as `retry`.
 
-Refunds and disputes update the recognition's `stripe_status` (`refunded`, `partially_refunded`, `disputed`, `dispute_won`, `dispute_lost`). The record stays in the ledger and on Moonbeam, but refunded, partially refunded, disputed and lost tips no longer count toward tip totals.
+Refunds and disputes update the recognition's `stripe_status` (`refunded`, `partially_refunded`, `disputed`, `dispute_won`, `dispute_lost`). The record stays in the ledger and on-chain, but refunded, partially refunded, disputed and lost tips no longer count toward tip totals.
 
 A request with a missing or invalid signature gets a 400 response and changes nothing.
+
+## Covering the card fee
+
+Customers can tick "Add 28p for the card fee so Maya gets the full £5". Checkout then has a second
+line item for the fee, worked out in `lib/payments/fees.ts` from Stripe's standard UK card rate
+(1.5% + 20p). The session metadata carries `tipPence` (the tip) and `coverFeePence`. The webhook and
+the thank-you page record `tipPence`, not `amount_total`, so the fee never counts as part of a tip,
+a dream contribution or payroll. Older sessions without `tipPence` fall back to `amount_total`.
+
+The box is unticked by default, so the customer always opts in. The minimum tip is £2
+(`MIN_TIP_AMOUNT_PENCE`), because below that the fixed 20p takes more than 10% of the tip.

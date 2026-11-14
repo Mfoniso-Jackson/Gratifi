@@ -2,6 +2,8 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "dotenv/config";
 
+const accounts = process.env.CHAIN_OPERATOR_PRIVATE_KEY ? [process.env.CHAIN_OPERATOR_PRIVATE_KEY] : [];
+
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.24",
@@ -10,16 +12,21 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
-    moonbeam: {
-      url: process.env.MOONBEAM_RPC_URL || "https://rpc.api.moonbeam.network",
-      chainId: Number(process.env.MOONBEAM_CHAIN_ID || 1284),
-      accounts: process.env.MOONBEAM_OPERATOR_PRIVATE_KEY ? [process.env.MOONBEAM_OPERATOR_PRIVATE_KEY] : []
+    // Base, Coinbase's Ethereum layer 2. Moonbeam shut down in 2026 and is no longer a target.
+    base: {
+      url: process.env.CHAIN_RPC_URL || "https://mainnet.base.org",
+      chainId: 8453,
+      accounts
     },
-    moonbase: {
-      url: process.env.MOONBASE_RPC_URL || "https://rpc.api.moonbase.moonbeam.network",
-      chainId: 1287,
-      accounts: process.env.MOONBEAM_OPERATOR_PRIVATE_KEY ? [process.env.MOONBEAM_OPERATOR_PRIVATE_KEY] : []
+    baseSepolia: {
+      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
+      chainId: 84532,
+      accounts
     }
+  },
+  etherscan: {
+    // One Etherscan API key covers Basescan (Etherscan API v2).
+    apiKey: process.env.ETHERSCAN_API_KEY || ""
   },
   paths: {
     tests: "./test/contracts"

@@ -1,6 +1,6 @@
 # GratiFi
 
-GratiFi v1.0 is a production-oriented recognition protocol and web platform for venues. Customers scan a QR code, recognise a worker, pay through Stripe, and see a simple success message. The backend stores the event in Supabase and anchors a deterministic recognition hash on Moonbeam.
+GratiFi v1.0 is a production-oriented recognition protocol and web platform for venues. Customers scan a QR code, recognise a worker, pay through Stripe, and see a simple success message. The backend stores the event in Supabase and anchors a deterministic recognition hash on Base (Coinbase's Ethereum layer 2). Moonbeam, the original network, shut down in 2026; see docs/base-deployment.md.
 
 Customer-facing UX intentionally avoids wallet, gas, token, and chain language. Internally, the system is structured as protocol infrastructure so a public API and SDK can be added later.
 
@@ -13,7 +13,7 @@ Customer-facing UX intentionally avoids wallet, gas, token, and chain language. 
 - Stripe Checkout and verified webhooks
 - Solidity `^0.8.20`
 - Hardhat and ethers v6
-- Moonbeam anchoring
+- On-chain anchoring on Base
 
 ## Local Setup
 
@@ -65,7 +65,7 @@ pnpm seed:demo
 5. `RecognitionEngine` validates and normalises the event.
 6. `HashService` generates deterministic hashes.
 7. Supabase stores the recognition event.
-8. `MoonbeamService` anchors the recognition on `GratiFiProtocol`.
+8. `ChainService` anchors the recognition on `GratiFiProtocol`.
 9. Admin can inspect status, retry anchoring, and export CSV.
 
 ## Protocol Boundaries
@@ -112,7 +112,7 @@ Operator docs:
 
 ## Demo mode
 
-To preview the whole app without Supabase, Stripe or Moonbeam, run it with sample data:
+To preview the whole app without Supabase, Stripe or a blockchain, run it with sample data:
 
 ```bash
 GRATIFI_DEMO_MODE=true pnpm dev

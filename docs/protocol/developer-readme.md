@@ -2,7 +2,7 @@
 
 ## What GratiFi Is
 
-GratiFi is a Moonbeam-backed recognition protocol and web platform for real-world service appreciation.
+GratiFi is a blockchain-backed (Base) recognition protocol and web platform for real-world service appreciation.
 
 The production app supports:
 
@@ -10,7 +10,7 @@ The production app supports:
 - walletless customer recognition;
 - Stripe Checkout payments;
 - Supabase recognition ledger storage;
-- Moonbeam anchoring;
+- Base anchoring;
 - admin dashboards;
 - pilot operations and evidence capture.
 
@@ -23,7 +23,7 @@ The production app supports:
 5. A verified Stripe webhook triggers recognition creation.
 6. The recognition payload is normalised and hashed.
 7. Supabase stores the operational event.
-8. Moonbeam records the recognition hash through `GratiFiProtocol.sol`.
+8. Base records the recognition hash through `GratiFiProtocol.sol`.
 9. The app stores transaction and block confirmation data.
 
 ## Running the Project
@@ -57,13 +57,13 @@ GET /api/v1/verify/[recognitionHash]
 A confirmed recognition should include:
 
 - `recognition_hash`;
-- `moonbeam_status = confirmed`;
-- `moonbeam_tx_hash`;
-- `moonbeam_block_number`;
+- `anchor_status = confirmed`;
+- `anchor_tx_hash`;
+- `anchor_block_number`;
 - `protocol_version`;
 - `confirmed_at`.
 
-Then inspect the transaction on a Moonbeam block explorer and confirm the `RecognitionRecorded` event.
+Then inspect the transaction on Basescan and confirm the `RecognitionRecorded` event.
 
 ## Contributing
 

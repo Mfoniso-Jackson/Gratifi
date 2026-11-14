@@ -154,10 +154,12 @@ export function buildDemoData(): Record<string, Row[]> {
       recognition_hash: recognitionHash,
       stripe_payment_intent_id: `pi_demo_${String(i + 1).padStart(4, "0")}`,
       stripe_status: "paid",
-      moonbeam_status: status,
-      moonbeam_tx_hash: status === "confirmed" ? hex(`demo-tx-${i}`) : null,
-      moonbeam_block_number: status === "confirmed" ? 9_412_000 + i * 37 : null,
-      moonbeam_contract_address: "0x0000000000000000000000000000000000de3000",
+      anchor_status: status,
+      anchor_tx_hash: status === "confirmed" ? hex(`demo-tx-${i}`) : null,
+      anchor_block_number: status === "confirmed" ? 9_412_000 + i * 37 : null,
+      anchor_contract_address: "0x0000000000000000000000000000000000de3000",
+      // The three oldest sample tips were written to Moonbeam before it shut down; the rest are on Base.
+      anchor_chain_id: status === "confirmed" ? (ago >= 16 ? 1284 : 8453) : null,
       protocol_version: "gratifi-v1",
       created_at: daysAgo(ago, 9 + (i % 9)),
       confirmed_at: status === "confirmed" ? daysAgo(ago, 10 + (i % 9)) : null
@@ -275,6 +277,8 @@ export function buildDemoData(): Record<string, Row[]> {
       id: demoUuid("de30a99a", i * 3 + n + 1),
       venue_id: event.venue_id,
       worker_id: n === 0 ? event.worker_id : null,
+      // Some staff wear NFC badges, so a share of visits are taps rather than QR scans.
+      source: n === 0 && i % 3 === 0 ? "nfc" : "qr",
       created_at: new Date(Date.parse(event.created_at) - (n + 1) * 7 * 60 * 1000).toISOString()
     }))
   );
@@ -287,7 +291,30 @@ export function buildDemoData(): Record<string, Row[]> {
     created_at: daysAgo(i % 14, 9 + (i % 9))
   }));
 
+  // A sample data request, so the admin queue has something to show in demo mode.
+  const sampleTip = recognition_events[2];
+  const data_requests: Row[] = [
+    {
+      id: demoUuid("de30d00c", 1),
+      reference: "DR-4F2A9C1E",
+      requester_type: "customer",
+      request_type: "delete",
+      email: "customer@example.com",
+      name: null,
+      venue_name: "Juniper and Oak",
+      tip_date: String(sampleTip.created_at).slice(0, 10),
+      amount_pence: sampleTip.amount_pence,
+      details: "Please delete the note I left.",
+      status: "received",
+      due_on: dateOnly(29),
+      admin_note: null,
+      completed_at: null,
+      created_at: daysAgo(1)
+    }
+  ];
+
   return {
+    data_requests,
     venues,
     workers,
     recognition_events,
