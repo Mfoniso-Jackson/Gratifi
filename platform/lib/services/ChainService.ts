@@ -80,6 +80,12 @@ export class ChainService {
     return new ethers.Contract(appConfig.chain.contractAddress, abi, wallet);
   }
 
+  async isBatchRecorded(merkleRoot: string) {
+    if (!this.isConfigured()) return false;
+    const provider = new ethers.JsonRpcProvider(appConfig.chain.rpcUrl, appConfig.chain.chainId);
+    return Boolean(await new ethers.Contract(appConfig.chain.contractAddress, abi, provider).isBatchRecorded(merkleRoot));
+  }
+
   /** Writes one hourly batch: the Merkle root of every tip in it (see lib/anchoring/merkle.ts). */
   async recordBatch(merkleRoot: string, leafCount: number) {
     const contract = this.writableContract();

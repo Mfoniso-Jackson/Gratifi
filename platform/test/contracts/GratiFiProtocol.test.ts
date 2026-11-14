@@ -53,7 +53,8 @@ describe("GratiFiProtocol batches", function () {
   }
 
   it("records a batch root and verifies each tip with the off-chain proofs", async function () {
-    const { buildMerkleBatch } = await import("../../lib/anchoring/merkle");
+    // Full file name: Node loads this test as a native ES module, which needs the extension.
+    const { buildMerkleBatch } = await import("../../lib/anchoring/merkle.ts");
     const { contract } = await deploy();
     const hashes = ["a", "b", "c", "d", "e"].map((s) => ethers.keccak256(ethers.toUtf8Bytes(`tip-${s}`)));
     const batch = buildMerkleBatch(hashes);

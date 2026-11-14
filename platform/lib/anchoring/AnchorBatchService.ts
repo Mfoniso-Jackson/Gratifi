@@ -3,8 +3,11 @@ import { ChainService } from "@/lib/services/ChainService";
 import { buildMerkleBatch } from "@/lib/anchoring/merkle";
 import { stampRoot, type OtsProof } from "@/lib/anchoring/opentimestamps";
 
+const STALE_BATCH_MINUTES = 30;
+
 export interface BatchChain {
   isConfigured(): boolean;
+  isBatchRecorded(merkleRoot: string): Promise<boolean>;
   recordBatch(merkleRoot: string, leafCount: number): Promise<{ txHash: string | null; blockNumber: number | null; chainId: number }>;
 }
 
@@ -26,9 +29,10 @@ export class AnchorBatchService {
     private readonly stamp: (root: string) => Promise<OtsProof[]> = (root) => stampRoot(root)
   ) {}
 
-  async run(options: { limit?: number } = {}): Promise<BatchOutcome> {
+  async run(options: { limit?: number; now?: Date } = {}): Promise<BatchOutcome> {
     if (!this.chain.isConfigured()) return { action: "skipped", reason: "The blockchain record is not configured" };
 
+    await this.reconcileStaleBatches(options.now ?? new Date());
     await this.retryBitcoinBackups();
 
     const waiting = await this.db
@@ -73,11 +77,17 @@ export class AnchorBatchService {
       return { action: "failed", batchId: batch.id, tips: tips.length, error: message };
     }
 
+    await this.markConfirmed(batch.id, result);
+    const backups = await this.backUpToBitcoin(batch.id, root);
+    return { action: "recorded", batchId: batch.id, merkleRoot: root, tips: tips.length, bitcoinBackup: backups };
+  }
+
+  private async markConfirmed(batchId: string, result: { txHash: string | null; blockNumber: number | null; chainId: number }) {
     const confirmedAt = new Date().toISOString();
     await this.db
       .from("anchor_batches")
-      .update({ status: "confirmed", tx_hash: result.txHash, block_number: result.blockNumber, chain_id: result.chainId, confirmed_at: confirmedAt })
-      .eq("id", batch.id);
+      .update({ status: "confirmed", tx_hash: result.txHash, block_number: result.blockNumber, chain_id: result.chainId, error: null, confirmed_at: confirmedAt })
+      .eq("id", batchId);
     await this.db
       .from("recognition_events")
       .update({
@@ -88,10 +98,32 @@ export class AnchorBatchService {
         anchor_contract_address: appConfig.chain.contractAddress || null,
         confirmed_at: confirmedAt
       })
-      .eq("anchor_batch_id", batch.id);
+      .eq("anchor_batch_id", batchId);
+  }
 
-    const backups = await this.backUpToBitcoin(batch.id, root);
-    return { action: "recorded", batchId: batch.id, merkleRoot: root, tips: tips.length, bitcoinBackup: backups };
+  /**
+   * A batch still "pending" after 30 minutes means a run was cut off part-way (for example the server
+   * timed out). If its root reached the chain, finish it; otherwise release its tips for this run.
+   */
+  private async reconcileStaleBatches(now: Date) {
+    const cutoff = new Date(now.getTime() - STALE_BATCH_MINUTES * 60_000).toISOString();
+    const pending = await this.db.from("anchor_batches").select("id, merkle_root, chain_id, status, created_at").eq("status", "pending");
+    for (const batch of ((pending.data ?? []) as any[]).filter((b) => b.created_at < cutoff)) {
+      let onChain = false;
+      try {
+        onChain = await this.chain.isBatchRecorded(batch.merkle_root);
+      } catch {
+        continue; // Can't reach the chain: decide on a later run rather than risk recording twice.
+      }
+      if (onChain) {
+        // The transaction hash wasn't saved before the run stopped; the root itself is on-chain.
+        await this.markConfirmed(batch.id, { txHash: null, blockNumber: null, chainId: batch.chain_id });
+        await this.backUpToBitcoin(batch.id, batch.merkle_root);
+      } else {
+        await this.db.from("anchor_batches").update({ status: "failed", error: "Run was interrupted before the batch was written" }).eq("id", batch.id);
+        await this.db.from("recognition_events").update({ anchor_status: "retry", anchor_batch_id: null, merkle_proof: null }).eq("anchor_batch_id", batch.id);
+      }
+    }
   }
 
   private async backUpToBitcoin(batchId: string, root: string) {

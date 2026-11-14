@@ -11,6 +11,7 @@ function freshDemoData() {
 function chain(overrides: Partial<BatchChain> = {}): BatchChain {
   return {
     isConfigured: () => true,
+    isBatchRecorded: vi.fn(async () => false),
     recordBatch: vi.fn(async () => ({ txHash: "0xbatchtx", blockNumber: 123, chainId: 84532 })),
     ...overrides
   };
@@ -61,6 +62,52 @@ describe("hourly batches", () => {
 
     await new AnchorBatchService(db, chain(), async () => proof).run();
     expect((await db.from("anchor_batches").select("*").eq("id", id).single()).data.ots_status).toBe("submitted");
+  });
+
+  it("finishes a batch whose run was cut off after its root reached the chain", async () => {
+    const db = createDemoClient({ env: {} });
+    // A run that stopped right after writing the root: the batch and its tips are still "pending".
+    let interrupted: string | null = null;
+    const stopsAfterWriting = chain({
+      recordBatch: vi.fn(async (root: string) => {
+        interrupted = root;
+        throw new Error("Function timed out");
+      })
+    });
+    const first = await new AnchorBatchService(db, stopsAfterWriting, async () => proof).run();
+    const batchId = (first as any).batchId;
+    // Undo the failure handling to simulate the process dying before it could run.
+    await db.from("anchor_batches").update({ status: "pending", error: null, created_at: new Date(Date.now() - 60 * 60_000).toISOString() }).eq("id", batchId);
+    const tips = ((await db.from("recognition_events").select("*")).data as any[]).filter((e) => e.anchor_status === "retry");
+    for (const tip of tips) await db.from("recognition_events").update({ anchor_status: "pending", anchor_batch_id: batchId }).eq("id", tip.id);
+
+    const onChain = chain({ isBatchRecorded: vi.fn(async (root: string) => root === interrupted) });
+    await new AnchorBatchService(db, onChain, async () => proof).run();
+    expect((await db.from("anchor_batches").select("*").eq("id", batchId).single()).data).toMatchObject({ status: "confirmed", ots_status: "submitted" });
+    for (const tip of tips) {
+      expect((await db.from("recognition_events").select("*").eq("id", tip.id).single()).data.anchor_status).toBe("confirmed");
+    }
+  });
+
+  it("releases tips from an interrupted batch that never reached the chain", async () => {
+    const db = createDemoClient({ env: {} });
+    const waiting = ((await db.from("recognition_events").select("*")).data as any[]).filter((e) => e.anchor_status !== "confirmed");
+    const stale = (await db.from("anchor_batches").insert({ merkle_root: "0x" + "11".repeat(32), leaf_count: waiting.length, chain_id: 84532, status: "pending", created_at: new Date(Date.now() - 60 * 60_000).toISOString() }).select("*").single()).data;
+    for (const tip of waiting) await db.from("recognition_events").update({ anchor_status: "pending", anchor_batch_id: stale.id }).eq("id", tip.id);
+
+    const outcome = await new AnchorBatchService(db, chain(), async () => proof).run();
+    expect((await db.from("anchor_batches").select("*").eq("id", stale.id).single()).data.status).toBe("failed");
+    expect(outcome).toMatchObject({ action: "recorded", tips: waiting.length });
+  });
+
+  it("leaves a batch that is still being written alone", async () => {
+    const db = createDemoClient({ env: {} });
+    const waiting = ((await db.from("recognition_events").select("*")).data as any[]).filter((e) => e.anchor_status !== "confirmed");
+    const fresh = (await db.from("anchor_batches").insert({ merkle_root: "0x" + "22".repeat(32), leaf_count: waiting.length, chain_id: 84532, status: "pending" }).select("*").single()).data;
+    for (const tip of waiting) await db.from("recognition_events").update({ anchor_status: "pending", anchor_batch_id: fresh.id }).eq("id", tip.id);
+
+    expect(await new AnchorBatchService(db, chain(), async () => proof).run()).toMatchObject({ action: "skipped", reason: "No tips waiting" });
+    expect((await db.from("anchor_batches").select("*").eq("id", fresh.id).single()).data.status).toBe("pending");
   });
 
   it("does nothing until the chain is configured", async () => {
