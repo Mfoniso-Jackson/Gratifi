@@ -9,6 +9,7 @@ import { applyDreamTip } from "@/lib/dreams/DreamService";
 import { loadVenueAccess } from "@/lib/billing/access";
 import { adminApiAccess, scopeToVenues } from "@/lib/auth/access";
 import { coverFeePence } from "@/lib/payments/fees";
+import { canTakeCardTips } from "@/lib/payouts/ConnectService";
 
 /** Latest tips, for signed-in admins and venue owners only (scoped to their venues). Tips include notes. */
 export async function GET() {
@@ -30,7 +31,11 @@ export async function POST(request: Request) {
   const message = String(form.get("message") ?? "");
 
   // Venues whose pilot ended without a plan don't take new tips (see venueAccess in lib/billing/plans.ts).
-  const venue = await createServiceClient().from("venues").select("id, created_at, billing_exempt").eq("id", venueId).maybeSingle();
+  const venue = await createServiceClient()
+    .from("venues")
+    .select("id, name, created_at, billing_exempt, stripe_account_id, stripe_charges_enabled")
+    .eq("id", venueId)
+    .maybeSingle();
   if (!venue.data) return protocolError("Venue not found", 404);
   if (!(await loadVenueAccess(createServiceClient(), venue.data)).takingTips) {
     return protocolError("This venue isn't taking thank-yous right now", 403);
@@ -58,13 +63,17 @@ export async function POST(request: Request) {
     return NextResponse.redirect(new URL(`/success?${query}`, request.url), 303);
   }
 
+  // Tips are paid to the venue's own Stripe account; until it's set up, card tips can't be taken.
+  if (!canTakeCardTips(venue.data)) return protocolError("This venue hasn't finished setting up card tips", 409);
+
   const session = await new PaymentService().createCheckoutSession({
     workerId,
     venueId,
     amountPence,
     message,
     dreamLinked: form.get("dreamLinked") === "on",
-    coverFee: form.get("coverFee") === "on"
+    coverFee: form.get("coverFee") === "on",
+    venueAccountId: venue.data.stripe_account_id
   });
   if (!session.url) return protocolError("Stripe did not return a checkout URL", 500);
   return NextResponse.redirect(session.url, 303);

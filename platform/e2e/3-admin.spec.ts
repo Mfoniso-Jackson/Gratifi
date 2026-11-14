@@ -69,3 +69,11 @@ test("an NFC tap opens the tip page and shows on the staff card", async ({ page 
   await page.goto(`/admin/workers/${MAYA}/card`);
   await expect(page.getByText(`${before + 1} NFC tap`)).toBeVisible();
 });
+
+test("an owner sets up payouts so tips are paid to their own Stripe account", async ({ page }) => {
+  await page.goto("/admin/venues/de30a001-0000-4000-8000-000000000002");
+  await expect(page.getByText("Not set up")).toBeVisible();
+  await page.getByRole("button", { name: "Set up payouts" }).click();
+  await expect(page.getByText("Taking card tips")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Stripe dashboard" })).toBeVisible();
+});

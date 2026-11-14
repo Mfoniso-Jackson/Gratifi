@@ -33,6 +33,11 @@ export function buildDemoData(): Record<string, Row[]> {
       slug: "demo-cafe",
       referral_code: "juniper1",
       signup_source: "admin",
+      // Payouts set up: tips go to the venue's own Stripe account.
+      stripe_account_id: "acct_demo_juniper",
+      stripe_charges_enabled: true,
+      stripe_payouts_enabled: true,
+      stripe_details_submitted: true,
       name: "Juniper & Oak Café",
       address: "14 Market Street, Bristol",
       status: "active",

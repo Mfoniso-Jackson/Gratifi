@@ -76,3 +76,11 @@ Use this checklist after the repo is deployed and before taking live payments.
 - Get `/privacy` and `/terms` reviewed: fill in every [bracketed] detail, answer the "For review"
   boxes, then remove the draft banner in `components/LegalPage.tsx`.
 - The Overview shows how often customers cover the card fee.
+
+## Venue payouts (migration 013)
+
+- Apply `supabase/migrations/013_venue_payouts.sql`.
+- Enable Stripe Connect (Express) and add `account.updated` from connected accounts to the webhook.
+  See `docs/stripe-connect.md`.
+- Each venue sets up payouts from its venue page before it can take card tips.
+- Before the first refund, check the steps for reversing the transfer to the venue.

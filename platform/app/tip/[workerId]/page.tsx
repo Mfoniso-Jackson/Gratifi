@@ -6,6 +6,8 @@ import { WorkerService } from "@/lib/services/WorkerService";
 import { recordScan, visitSource } from "@/lib/services/ScanService";
 import { loadVenueAccess } from "@/lib/billing/access";
 import { PausedVenue } from "@/components/PausedVenue";
+import { canTakeCardTips } from "@/lib/payouts/ConnectService";
+import { isDemoMode } from "@/lib/demo/mode";
 import { DreamCard } from "@/components/DreamCard";
 import { DreamTipForm } from "@/components/DreamTipForm";
 import { getDream, recordSponsorView } from "@/lib/dreams/DreamService";
@@ -28,6 +30,8 @@ export default async function TipPage({
   if (source) await recordScan(db, { venueId: worker.data.venue_id, workerId: worker.data.id, source });
   const venue = worker.data.venues;
   if (venue && !(await loadVenueAccess(db, venue)).takingTips) return <PausedVenue venueName={venue.name} />;
+  // Live tips go to the venue's own Stripe account, so they wait until it's set up (demo mode skips Stripe).
+  if (venue && !isDemoMode() && !canTakeCardTips(venue)) return <PausedVenue venueName={venue.name} reason="setting_up" />;
   const dream = await getDream(db, worker.data.id);
   if (dream) await recordSponsorView(db, { campaignId: dream.campaign_id, venueId: worker.data.venue_id, page: "tip" });
 

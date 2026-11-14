@@ -42,13 +42,16 @@ export default function TermsPage() {
             You can choose to add the card fee on top, so the person you thanked receives the full tip. It&apos;s shown separately and
             it&apos;s never added unless you tick the box.
           </li>
-          <li>[How the tip reaches the staff member, once decided: through the venue&apos;s payroll, or paid to them directly.]</li>
+          <li>
+            Your tip is paid to the venue through Stripe, and the venue passes it to the person you thanked through payroll, under
+            its tipping policy. GratiFi never holds tip money.
+          </li>
           <li>
             Tips can&apos;t normally be cancelled once paid. If something went wrong, such as a duplicate payment or the wrong amount,
             contact us within [14 days] and we&apos;ll put it right. This doesn&apos;t affect your legal rights.
           </li>
         </ul>
-        <ForReview>Who receives the tip in law (venue or staff member), how the Employment (Allocation of Tips) Act 2023 applies to each option, and who must bear the card fee. Also whether the optional fee add-on meets the price transparency rules in the Digital Markets, Competition and Consumers Act 2024.</ForReview>
+        <ForReview>Tips are paid to the venue (option A). Confirm the venue is the recipient in law, that the Employment (Allocation of Tips) Act 2023 duties sit with the venue, and that the venue bearing the card fee is right. Also whether the optional fee add-on meets the price transparency rules in the Digital Markets, Competition and Consumers Act 2024.</ForReview>
       </section>
 
       <section id="notes">
@@ -83,6 +86,12 @@ export default function TermsPage() {
             requires, including having a written tipping policy and not taking deductions from tips.
           </li>
           <li>You confirm your staff are happy for their names, roles and any photos to appear on their tip pages.</li>
+          <li>
+            Tips are paid into your own Stripe account, which you set up through GratiFi and which is also covered by Stripe&apos;s
+            terms. Card fees come out of each payment unless the customer chose to cover them. You must still pay your staff the full
+            tip.
+          </li>
+          <li>If a tip is refunded or disputed, the amount is taken back from your Stripe account.</li>
           <li>You&apos;ll keep your admin sign-in secure and tell us if it&apos;s misused.</li>
         </ul>
         <ForReview>Whether venues need a separate written agreement (including a data processing agreement) instead of these terms.</ForReview>

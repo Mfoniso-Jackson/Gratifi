@@ -12,6 +12,9 @@ import { loadVenueAccess } from "@/lib/billing/access";
 import { revalidatePath } from "next/cache";
 import { requireGlobalAdmin } from "@/lib/auth/access";
 import { sponsorsEnabled } from "@/lib/features";
+import { StatusPill } from "@/components/StatusPill";
+import { payoutState } from "@/lib/payouts/ConnectService";
+import { openStripeDashboard, setUpPayouts } from "./payouts";
 
 export const dynamic = "force-dynamic";
 
@@ -51,10 +54,10 @@ export default async function VenueAdminPage({
   searchParams
 }: {
   params: Promise<{ venueId: string }>;
-  searchParams: Promise<{ welcome?: string }>;
+  searchParams: Promise<{ welcome?: string; payouts?: string }>;
 }) {
   const { venueId } = await params;
-  const { welcome } = await searchParams;
+  const { welcome, payouts } = await searchParams;
   const context = await requireAdmin();
   if (!canAccessVenue(context, venueId)) notFound();
   const db = createServiceClient();
@@ -101,6 +104,7 @@ export default async function VenueAdminPage({
           <button className="rounded-md border border-ink/15 px-3 py-1">Save</button>
         </form>
       )}
+      <PayoutsSection venue={venue.data} notice={payouts} />
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="rounded-md border border-ink/10 bg-white p-5">
           <p className="text-sm text-ink/60">Venue QR</p>
@@ -164,5 +168,46 @@ export default async function VenueAdminPage({
         </section>
       )}
     </AdminShell>
+  );
+}
+
+const PAYOUT_TEXT = {
+  not_started: "Tips are paid straight into your own Stripe account, then to your bank. Set it up once (about 10 minutes) to start taking card tips.",
+  incomplete: "Stripe still needs a few details before tips can be paid to you. Card tips are off until then.",
+  restricted: "Stripe is checking your details or needs something else. Card tips may be paused until it's sorted.",
+  ready: "Tips are paid into your Stripe account and on to your bank. Pass them to your team through payroll, in full, under your tipping policy."
+} as const;
+
+/** Where tips are paid: the venue's own Stripe Express account (Stripe Connect). */
+function PayoutsSection({ venue, notice }: { venue: any; notice?: string }) {
+  const state = payoutState(venue);
+  return (
+    <section className="mt-6 rounded-md border border-ink/10 bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="font-semibold">Payouts</p>
+        {state === "ready" ? <StatusPill tone="good">Taking card tips</StatusPill> : <StatusPill tone="warn">{state === "not_started" ? "Not set up" : "Needs attention"}</StatusPill>}
+      </div>
+      <p className="mt-1 text-sm text-ink/70">{PAYOUT_TEXT[state]}</p>
+      {notice === "demo-dashboard" && <p className="mt-2 text-sm text-ink/60">In demo mode there&apos;s no Stripe dashboard to open.</p>}
+      {notice === "returned" && state !== "ready" && <p className="mt-2 text-sm text-ink/60">Thanks. Stripe is checking your details, which can take a few minutes. This page updates when it&apos;s done.</p>}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {state !== "ready" && (
+          <form action={setUpPayouts}>
+            <input type="hidden" name="venueId" value={venue.id} />
+            <button className="rounded-md bg-ink px-4 py-2 text-sm text-white">{state === "not_started" ? "Set up payouts" : "Finish setting up"}</button>
+          </form>
+        )}
+        {venue.stripe_account_id && (
+          <form action={openStripeDashboard}>
+            <input type="hidden" name="venueId" value={venue.id} />
+            <button className="rounded-md border border-ink/15 px-4 py-2 text-sm">Open Stripe dashboard</button>
+          </form>
+        )}
+      </div>
+      <p className="mt-3 text-xs text-ink/50">
+        The card fee comes out of each payment unless the customer chose to cover it. Under the tipping law it can&apos;t be taken from
+        staff, so pay your team the full tip.
+      </p>
+    </section>
   );
 }

@@ -20,3 +20,9 @@ export function tipFromSession(session: { amount_total?: number | null; metadata
   const tip = Number(session.metadata?.tipPence);
   return Number.isInteger(tip) && tip > 0 && tip <= total ? tip : total;
 }
+
+/** Stripe's fee on a card payment of `totalPence` at the standard UK rate, rounded up. */
+export function cardFeePence(totalPence: number) {
+  if (!Number.isInteger(totalPence) || totalPence <= 0) return 0;
+  return Math.ceil((totalPence * CARD_FEE_PERCENT) / 100) + CARD_FEE_FIXED_PENCE;
+}

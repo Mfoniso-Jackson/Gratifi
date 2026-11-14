@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           address]. We are the controller of the personal data described here. Contact us at [privacy@example.com].
         </p>
         <p className="mt-2">Our registration number with the Information Commissioner&apos;s Office (ICO) is [number].</p>
-        <ForReview>Confirm whether GratiFi or the venue is the controller for each type of data (or whether they are joint controllers), especially tip notes that venues can see. This depends on how money flows to staff, which isn&apos;t decided yet.</ForReview>
+        <ForReview>Confirm whether GratiFi or the venue is the controller for each type of data (or whether they are joint controllers), especially tip notes that venues can see. Tips are paid to the venue, which passes them to staff through payroll.</ForReview>
       </section>
 
       <section id="what">
@@ -95,7 +95,7 @@ export default function PrivacyPage() {
         <h2>5. Who we share it with</h2>
         <ul>
           <li><strong>The venue</strong>: managers see tips and notes for their own staff.</li>
-          <li><strong>Stripe</strong>: card payments, subscriptions and invoices.</li>
+          <li><strong>Stripe</strong>: card payments, subscriptions and invoices. Tips are paid to the venue&apos;s own Stripe account.</li>
           <li><strong>Supabase</strong>: our database and sign-in.</li>
           <li><strong>Vercel</strong>: hosts the website.</li>
           <li><strong>Upstash</strong>: short-lived rate-limit counters.</li>
