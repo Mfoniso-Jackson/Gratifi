@@ -159,7 +159,6 @@ export function buildDemoData(): Record<string, Row[]> {
       currency: "GBP",
       message: messages[i % messages.length],
       message_hash: hex(`demo-message-${i}`),
-      hash_salt: hex(`demo-salt-${i}`),
       recognition_hash: recognitionHash,
       stripe_payment_intent_id: `pi_demo_${String(i + 1).padStart(4, "0")}`,
       stripe_status: "paid",
@@ -360,8 +359,12 @@ export function buildDemoData(): Record<string, Row[]> {
     }
   ];
 
+  // Each sample tip's salt, in the server-only table (migration 014).
+  const recognition_salts: Row[] = recognition_events.map((event, i) => ({ recognition_id: event.id, salt: hex(`demo-salt-${i}`) }));
+
   return {
     anchor_batches,
+    recognition_salts,
     data_requests,
     venues,
     workers,

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ethers } from "ethers";
-import { HashService, withoutSalt } from "@/lib/services/HashService";
+import { HashService } from "@/lib/services/HashService";
 import { createDemoClient } from "@/lib/demo/client";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { eraseTipNotes } from "@/lib/services/DataRequestService";
@@ -41,10 +41,6 @@ describe("HashService", () => {
   it("stops a staff member's tips being linked on-chain through their public ID", () => {
     expect(service.entityHash(payload.workerId, service.newSalt())).not.toEqual(service.entityHash(payload.workerId, service.newSalt()));
   });
-
-  it("never sends the salt out of the server", () => {
-    expect(withoutSalt({ id: "t1", hash_salt: "0xabc", amount_pence: 500 })).toEqual({ id: "t1", amount_pence: 500 });
-  });
 });
 
 describe("salted recognitions", () => {
@@ -62,8 +58,11 @@ describe("salted recognitions", () => {
       stripeStatus: "paid"
     };
     const first = await engine.createFromPaidIntent(tip);
-    expect(first.hash_salt).toMatch(/^0x[0-9a-f]{64}$/);
-    expect(first.message_hash).toEqual(new HashService().messageHash("Thanks!", first.hash_salt));
+    // The salt is not on the tip row (which staff and owners can read), only in the server-only table.
+    expect(first).not.toHaveProperty("hash_salt");
+    const salt = await engine.saltFor(first.id);
+    expect(salt).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(first.message_hash).toEqual(new HashService().messageHash("Thanks!", salt));
     expect(first.protocol_version).toBe("gratifi-v2");
 
     // Stripe resends the event: same recognition, not a second one with a new salt.
@@ -72,6 +71,33 @@ describe("salted recognitions", () => {
 
     await eraseTipNotes(db, [first.id]);
     const erased = (await db.from("recognition_events").select("*").eq("id", first.id).single()).data;
-    expect(erased).toMatchObject({ message: null, hash_salt: null, recognition_hash: first.recognition_hash });
+    expect(erased).toMatchObject({ message: null, recognition_hash: first.recognition_hash });
+    expect(await engine.saltFor(first.id)).toBeNull();
+  });
+
+  it("never anchors raw IDs for a tip whose salt was erased", async () => {
+    delete (globalThis as { __gratifiDemoData?: unknown }).__gratifiDemoData;
+    const db = createDemoClient({ env: {} });
+    const recordRecognition = vi.fn(async () => ({ txHash: "0xtx", blockNumber: 1, chainId: 8453, alreadyRecorded: false }));
+    const engine = new RecognitionEngine(db, undefined, { recordRecognition } as any, "single");
+    const event = (await db.from("recognition_events").select("*").eq("anchor_status", "retry").limit(1)).data[0];
+    await eraseTipNotes(db, [event.id]);
+    await engine.anchor(event);
+    const sent = (recordRecognition.mock.calls[0] as any[])[0];
+    const hashes = new HashService();
+    expect(sent.workerHash).not.toEqual(hashes.entityHash(event.worker_id));
+    expect(sent.venueHash).not.toEqual(hashes.entityHash(event.venue_id));
+  });
+});
+
+describe("demo database", () => {
+  it("supports delete, which un-blocking a sponsor relies on", async () => {
+    delete (globalThis as { __gratifiDemoData?: unknown }).__gratifiDemoData;
+    const db = createDemoClient({ env: {} });
+    await db.from("venue_sponsor_blocks").insert({ venue_id: "v1", sponsor_id: "s1" });
+    await db.from("venue_sponsor_blocks").insert({ venue_id: "v1", sponsor_id: "s2" });
+    await db.from("venue_sponsor_blocks").delete().eq("venue_id", "v1").eq("sponsor_id", "s1");
+    const left = (await db.from("venue_sponsor_blocks").select("*")).data;
+    expect(left.map((r: any) => r.sponsor_id)).toEqual(["s2"]);
   });
 });

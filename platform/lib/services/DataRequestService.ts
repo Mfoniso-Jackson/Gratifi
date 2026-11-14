@@ -105,7 +105,10 @@ export async function exportTips(db: any, recognitionIds: string[]) {
 /** Removes a tip's note. The amount and payment reference stay for accounting; the on-chain record is a hash only. */
 export async function eraseTipNotes(db: any, recognitionIds: string[]) {
   // Removing the salt too means the on-chain fingerprint can never be linked back to this tip.
-  for (const id of recognitionIds) await db.from("recognition_events").update({ message: null, hash_salt: null }).eq("id", id);
+  for (const id of recognitionIds) {
+    await db.from("recognition_events").update({ message: null }).eq("id", id);
+    await db.from("recognition_salts").delete().eq("recognition_id", id);
+  }
   return recognitionIds.length;
 }
 
@@ -116,7 +119,9 @@ export async function eraseTipNotes(db: any, recognitionIds: string[]) {
 export async function eraseStaff(db: any, workerIds: string[], deleteAuthUser: (() => Promise<void>) | null) {
   for (const id of workerIds) {
     await db.from("workers").update({ display_name: "Former staff member", role: "", photo_url: null, user_id: null, status: "inactive" }).eq("id", id);
-    await db.from("recognition_events").update({ message: null, hash_salt: null }).eq("worker_id", id);
+    const tips = ((await db.from("recognition_events").select("id").eq("worker_id", id)).data ?? []) as Array<{ id: string }>;
+    await db.from("recognition_events").update({ message: null }).eq("worker_id", id);
+    for (const tip of tips) await db.from("recognition_salts").delete().eq("recognition_id", tip.id);
     await db.from("worker_dreams").update({ title: "Withdrawn", story: null, status: "withdrawn", show_on_wall: false }).eq("worker_id", id);
   }
   if (deleteAuthUser) await deleteAuthUser();

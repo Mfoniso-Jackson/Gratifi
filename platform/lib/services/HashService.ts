@@ -5,7 +5,8 @@ import type { RecognitionPayload } from "@/lib/types/domain";
 /**
  * Fingerprints for the permanent record (see docs/protocol/hashing-standard.md).
  *
- * Every tip gets its own random 32-byte salt, stored only in GratiFi's database. It is mixed into the
+ * Every tip gets its own random 32-byte salt, stored only in a server-only table (recognition_salts,
+ * migration 014). It is mixed into the
  * note, venue and staff hashes, so:
  * - a short note such as "Thanks!" can't be matched to its on-chain hash by guessing;
  * - a staff member's tips can't be linked together on-chain from their public tip-page ID;
@@ -49,10 +50,4 @@ export class HashService {
     const bytes = ethers.toUtf8Bytes(text);
     return salt ? ethers.concat([ethers.getBytes(salt), bytes]) : bytes;
   }
-}
-
-/** A tip row safe to send out of the server: the salt never leaves the database. */
-export function withoutSalt<T extends Record<string, unknown>>(row: T): Omit<T, "hash_salt"> {
-  const { hash_salt: _salt, ...rest } = row;
-  return rest;
 }

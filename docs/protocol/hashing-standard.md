@@ -14,7 +14,7 @@ Hashing gives each recognition a deterministic identity while keeping private op
 6. Hash the message instead of storing the raw message on-chain.
 7. `recognition_hash` must uniquely identify a recognition event.
 8. The same normalised payload and salt must always produce the same `recognition_hash`.
-9. Every recognition has its own random 32-byte salt (`hash_salt`), mixed into the message, venue and worker hashes and included in the recognition hash payload. The salt never leaves GratiFi's database.
+9. Every recognition has its own random 32-byte salt, mixed into the message, venue and worker hashes and included in the recognition hash payload. The salt is kept in a server-only table (`recognition_salts`) that signed-in staff and owners cannot read, and never leaves GratiFi's database.
 
 ## Why salts (protocol `gratifi-v2`)
 

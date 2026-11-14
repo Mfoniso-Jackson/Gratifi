@@ -61,7 +61,6 @@ export class RecognitionEngine {
         currency: valid.currency,
         message,
         message_hash: messageHash,
-        hash_salt: salt,
         recognition_hash: recognitionHash,
         stripe_payment_intent_id: valid.stripePaymentIntentId,
         stripe_status: valid.stripeStatus,
@@ -74,17 +73,29 @@ export class RecognitionEngine {
       .single();
 
     if (insert.error) throw insert.error;
+    // The salt is kept in a table only the server can read (migration 014).
+    const saved = await this.db.from("recognition_salts").insert({ recognition_id: insert.data.id, salt });
+    if (saved.error) throw saved.error;
     // In batch mode the tip waits for the hourly batch instead of its own transaction.
     if (this.mode === "batch") return insert.data;
     return this.anchor(insert.data);
   }
 
+  /** The tip's salt, read by the server only. Null once erased (or for tips made before v2). */
+  async saltFor(recognitionId: string): Promise<string | null> {
+    const row = await this.db.from("recognition_salts").select("salt").eq("recognition_id", recognitionId).maybeSingle();
+    return row.data?.salt ?? null;
+  }
+
   async anchor(event: any) {
     try {
+      // Never anchor raw IDs: if the salt was erased (a deletion request) or never existed, use a
+      // fresh random one, so the on-chain venue and staff hashes can't link this tip to anyone.
+      const salt = (await this.saltFor(event.id)) ?? this.hashService.newSalt();
       const result = await this.chainService.recordRecognition({
         recognitionHash: event.recognition_hash,
-        venueHash: this.hashService.entityHash(event.venue_id, event.hash_salt),
-        workerHash: this.hashService.entityHash(event.worker_id, event.hash_salt),
+        venueHash: this.hashService.entityHash(event.venue_id, salt),
+        workerHash: this.hashService.entityHash(event.worker_id, salt),
         messageHash: event.message_hash,
         amountPence: event.amount_pence
       });

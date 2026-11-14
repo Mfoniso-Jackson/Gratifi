@@ -56,8 +56,6 @@ export interface RecognitionEvent {
   anchor_batch_id?: string | null;
   merkle_proof?: string[] | null;
   fee_covered_pence?: number;
-  /** Per-tip salt for its hashes; never leaves the database, erased on a deletion request. */
-  hash_salt?: string | null;
   protocol_version: string;
   created_at: string;
   confirmed_at: string | null;
