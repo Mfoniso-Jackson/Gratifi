@@ -23,7 +23,9 @@ export async function POST(request: Request) {
   const outcome = await handleStripeEvent(event, {
     db,
     createRecognition: (payload) => new RecognitionEngine(db).createFromPaidIntent(payload),
-    applyDreamTip: sponsorsEnabled() ? (input) => applyDreamTip(db, input) : undefined
+    applyDreamTip: sponsorsEnabled() ? (input) => applyDreamTip(db, input) : undefined,
+    // Reversals need the API key; without one (demo mode, tests) statuses still update.
+    stripe: process.env.STRIPE_SECRET_KEY ? new PaymentService().api() : undefined
   });
 
   return Response.json({ received: true, outcome: outcome.action });

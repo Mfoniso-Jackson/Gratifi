@@ -89,3 +89,10 @@ Use this checklist after the repo is deployed and before taking live payments.
 
 - Apply `supabase/migrations/014_hash_salt.sql` before the first live tip. Every tip from then on gets
   its own salt (protocol `gratifi-v2`); see `docs/protocol/hashing-standard.md`.
+
+## Automatic refund and dispute reversals (migration 015)
+
+- Apply `supabase/migrations/015_payment_adjustments.sql`.
+- Make a test-mode refund of a tip and check the venue's transfer shows a reversal and a row appears in
+  `payment_adjustments`.
+- Decide whether Stripe's dispute fee should be charged to the venue (currently GratiFi pays it).
