@@ -6,7 +6,7 @@ const chainId = Number(process.env.CHAIN_ID ?? BASE_MAINNET);
 
 export const appConfig = {
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  minTipAmountPence: Number(process.env.MIN_TIP_AMOUNT_PENCE ?? 100),
+  minTipAmountPence: Number(process.env.MIN_TIP_AMOUNT_PENCE ?? 200),
   maxTipAmountPence: Number(process.env.MAX_TIP_AMOUNT_PENCE ?? 50000),
   /** The network new tip records are written to (Base by default). */
   chain: {

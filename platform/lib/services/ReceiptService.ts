@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { tipFromSession } from "@/lib/payments/fees";
 
 /**
  * What the thank-you page shows after a real Stripe payment. Stripe redirects with ?session_id=,
@@ -51,7 +52,7 @@ export async function loadReceipt(
       id: null,
       worker_id: session.metadata.workerId,
       venue_id: session.metadata.venueId ?? null,
-      amount_pence: session.amount_total ?? 0,
+      amount_pence: tipFromSession(session),
       message: session.metadata.message || null,
       recognition_hash: null,
       workers: worker ? { display_name: worker.display_name } : null,

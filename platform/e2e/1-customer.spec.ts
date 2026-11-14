@@ -24,6 +24,16 @@ test("a customer tips toward a staff member's dream and sees the thank-you page"
   await expect(page.getByRole("link", { name: "Get GratiFi for your venue" })).toHaveAttribute("href", "/for-venues?ref=juniper1");
 });
 
+test("a customer can add the card fee so the full tip reaches staff", async ({ page }) => {
+  await page.goto("/tip/de30b002-0000-4000-8000-000000000002");
+  await expect(page.getByRole("heading", { name: "Thank Tom" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue to payment" })).toBeVisible();
+  await page.getByLabel("Add 28p for the card fee so Tom gets the full £5").check();
+  await expect(page.getByRole("button", { name: "Continue to payment · £5.28" })).toBeVisible();
+  await page.locator("label", { hasText: "£3" }).first().click();
+  await expect(page.getByRole("button", { name: "Continue to payment · £3.25" })).toBeVisible();
+});
+
 test("an unknown venue shows a not-found page", async ({ page }) => {
   const response = await page.goto("/v/no-such-venue");
   expect(response?.status()).toBe(404);

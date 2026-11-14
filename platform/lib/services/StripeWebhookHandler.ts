@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import type { RecognitionPayload } from "@/lib/types/domain";
 import { saveSubscription } from "@/lib/billing/BillingService";
 import { applySponsorInvoiceEvent } from "@/lib/sponsors/InvoiceService";
+import { tipFromSession } from "@/lib/payments/fees";
 
 /**
  * Applies a verified Stripe event to GratiFi's records.
@@ -57,13 +58,15 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       if (session.mode === "subscription") return { action: "ignored", reason: "Subscription checkout" };
       const intentId = paymentIntentId(session.payment_intent as string | Stripe.PaymentIntent | null);
       const { venueId, workerId, message } = session.metadata ?? {};
-      if (!intentId || !venueId || !workerId || !session.amount_total) {
+      // Only the tip is recorded; a card fee the customer chose to cover is not part of it.
+      const tipPence = tipFromSession(session);
+      if (!intentId || !venueId || !workerId || !tipPence) {
         return { action: "ignored", reason: "Checkout session is missing GratiFi metadata" };
       }
       const recognition = await deps.createRecognition({
         venueId,
         workerId,
-        amountPence: session.amount_total,
+        amountPence: tipPence,
         currency: "GBP",
         message: message ?? null,
         stripePaymentIntentId: intentId,
@@ -72,7 +75,7 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       if (session.metadata?.dreamLinked === "true" && deps.applyDreamTip) {
         await deps.applyDreamTip({
           workerId,
-          amountPence: session.amount_total,
+          amountPence: tipPence,
           recognitionId: (recognition as { id?: string } | null)?.id ?? null
         });
       }

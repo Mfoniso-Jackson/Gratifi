@@ -3,11 +3,18 @@
 import { useState } from "react";
 import type { Dream } from "@/lib/dreams/DreamService";
 import { dreamContribution } from "@/lib/dreams/math";
+import { coverFeePence } from "@/lib/payments/fees";
 
 const amounts = [300, 500, 1000, 2000];
 
 function pounds(pence: number) {
-  return `£${(pence / 100).toLocaleString("en-GB", { maximumFractionDigits: 2 })}`;
+  const whole = pence % 100 === 0;
+  return `£${(pence / 100).toLocaleString("en-GB", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Small amounts read better as pence: "28p". */
+function money(pence: number) {
+  return pence < 100 ? `${pence}p` : pounds(pence);
 }
 
 export function DreamTipForm({
@@ -23,6 +30,8 @@ export function DreamTipForm({
 }) {
   const [amount, setAmount] = useState(500);
   const [linked, setLinked] = useState(Boolean(dream));
+  const [coverFee, setCoverFee] = useState(false);
+  const fee = coverFeePence(amount);
   const preview = dream && linked ? dreamContribution(dream, amount) : null;
   const afterPercent = preview && dream ? Math.min(100, Math.round((preview.after / dream.target_pence) * 100)) : 0;
 
@@ -90,8 +99,26 @@ export function DreamTipForm({
         />
       </label>
 
+      {/* Unticked by default: the customer opts in to paying the fee. */}
+      <label className="flex cursor-pointer items-center gap-3 text-sm text-ink/80">
+        <input
+          type="checkbox"
+          name="coverFee"
+          checked={coverFee}
+          onChange={(event) => setCoverFee(event.target.checked)}
+          className="h-5 w-5 accent-[#ff715b]"
+        />
+        <span>
+          Add {money(fee)} for the card fee so {workerName} gets the full {pounds(amount)}
+        </span>
+      </label>
+
       <button className="rounded-full bg-coral px-5 py-4 text-lg font-semibold text-ink transition hover:bg-[#ff8a77]">
-        {preview ? `Send ${pounds(amount)} to ${workerName}'s dream` : "Continue to payment"}
+        {preview
+          ? `Send ${pounds(amount)} to ${workerName}'s dream`
+          : coverFee
+            ? `Continue to payment · ${pounds(amount + fee)}`
+            : "Continue to payment"}
       </button>
       <p className="-mt-2 text-center text-sm text-ink/50">Secure checkout with Stripe · No account needed</p>
     </form>
