@@ -84,3 +84,8 @@ Use this checklist after the repo is deployed and before taking live payments.
   See `docs/stripe-connect.md`.
 - Each venue sets up payouts from its venue page before it can take card tips.
 - Before the first refund, check the steps for reversing the transfer to the venue.
+
+## Salted fingerprints (migration 014)
+
+- Apply `supabase/migrations/014_hash_salt.sql` before the first live tip. Every tip from then on gets
+  its own salt (protocol `gratifi-v2`); see `docs/protocol/hashing-standard.md`.

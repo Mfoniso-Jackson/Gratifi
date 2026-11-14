@@ -9,7 +9,7 @@ type DemoData = Record<string, Row[]>;
 
 /**
  * A minimal stand-in for the subset of the Supabase query builder this app uses: select (with one
- * level of embedded relations), insert, update, upsert, eq, order, limit, single and maybeSingle.
+ * level of embedded relations), insert, update, upsert, delete, eq, in, order, limit, single and maybeSingle.
  *
  * Where the data lives:
  * - With Upstash Redis configured (UPSTASH_REDIS_REST_URL/TOKEN), the whole demo dataset is one
@@ -18,7 +18,7 @@ type DemoData = Record<string, Row[]>;
  * - Otherwise it lives in this process's memory and resets when the server restarts.
  */
 // Bump the version when the sample data changes, so hosted previews reseed.
-export const DEMO_DATA_KEY = "gratifi:demo:data:v9";
+export const DEMO_DATA_KEY = "gratifi:demo:data:v11";
 const DEMO_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 const globalStore = globalThis as unknown as { __gratifiDemoData?: DemoData };
@@ -75,7 +75,7 @@ class DemoQuery implements PromiseLike<Result> {
   private limitCount: number | null = null;
   private mode: "many" | "single" | "maybeSingle" = "many";
   private columns = "*";
-  private op: "select" | "insert" | "update" | "upsert" = "select";
+  private op: "select" | "insert" | "update" | "upsert" | "delete" = "select";
   private payload: Row | Row[] | null = null;
   private upsertOptions: { onConflict?: string; ignoreDuplicates?: boolean } = {};
 
@@ -105,6 +105,11 @@ class DemoQuery implements PromiseLike<Result> {
     this.op = "upsert";
     this.payload = payload;
     this.upsertOptions = options;
+    return this;
+  }
+
+  delete() {
+    this.op = "delete";
     return this;
   }
 
@@ -180,6 +185,9 @@ class DemoQuery implements PromiseLike<Result> {
           affected.push(created);
         }
       }
+    } else if (this.op === "delete") {
+      affected = rows.filter((row) => this.matches(row));
+      data[this.tableName] = rows.filter((row) => !this.matches(row));
     } else {
       affected = rows.filter((row) => this.matches(row));
     }

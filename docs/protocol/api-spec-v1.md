@@ -146,7 +146,7 @@ Example response:
     "network_retired": false,
     "explorer_url": "https://basescan.org/tx/0xabc123...",
     "confirmed_at": "2026-07-09T10:00:30.000Z",
-    "protocol_version": "gratifi-v1"
+    "protocol_version": "gratifi-v2"
   },
   "meta": {}
 }

@@ -168,7 +168,7 @@ export function buildDemoData(): Record<string, Row[]> {
       anchor_contract_address: "0x0000000000000000000000000000000000de3000",
       // The three oldest sample tips were written to Moonbeam before it shut down; the rest are on Base.
       anchor_chain_id: status === "confirmed" ? (ago >= 16 ? 1284 : 8453) : null,
-      protocol_version: "gratifi-v1",
+      protocol_version: "gratifi-v2",
       // About a third of customers chose to cover the card fee.
       fee_covered_pence: i % 3 === 1 ? coverFeePence(amounts[i % amounts.length]) : 0,
       created_at: daysAgo(ago, 9 + (i % 9)),
@@ -359,8 +359,12 @@ export function buildDemoData(): Record<string, Row[]> {
     }
   ];
 
+  // Each sample tip's salt, in the server-only table (migration 014).
+  const recognition_salts: Row[] = recognition_events.map((event, i) => ({ recognition_id: event.id, salt: hex(`demo-salt-${i}`) }));
+
   return {
     anchor_batches,
+    recognition_salts,
     data_requests,
     venues,
     workers,
