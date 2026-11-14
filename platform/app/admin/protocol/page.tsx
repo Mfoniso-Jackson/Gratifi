@@ -5,7 +5,7 @@ import { ChainService } from "@/lib/services/ChainService";
 import { appConfig, protocolVersion } from "@/lib/config";
 import { chainInfo } from "@/lib/chains";
 import { createServiceClient } from "@/lib/supabase/server";
-import { addressUrl, networkName } from "@/lib/explorer";
+import { addressUrl, networkName, txUrl } from "@/lib/explorer";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +36,7 @@ export default async function ProtocolPage() {
   // Older records written to Moonbeam before it shut down.
   const onRetired = events.filter((e) => e.anchor_status === "confirmed" && chainInfo(e.anchor_chain_id)?.retired).length;
   const waiting = events.length - confirmed;
+  const batches = ((await createServiceClient().from("anchor_batches").select("*").order("created_at", { ascending: false }).limit(10)).data ?? []) as any[];
   const contractLink = addressUrl(status.contractAddress);
   const walletLink = addressUrl(wallet?.address);
 
@@ -69,6 +70,53 @@ export default async function ProtocolPage() {
         <Stat label="Recorded on-chain" value={String(confirmed)} />
         <Stat label="Waiting or retrying" value={String(waiting)} />
       </div>
+
+      <section className="mt-6 rounded-xl border border-ink/10 bg-white p-5">
+        <h2 className="font-semibold">{appConfig.anchorMode === "batch" ? "Hourly batches" : "Recording mode"}</h2>
+        <p className="mt-1 text-sm text-ink/60">
+          {appConfig.anchorMode === "batch"
+            ? "Once an hour, every waiting tip is written to Base as one Merkle root, and each tip keeps a proof that it's included. The root is also stamped on Bitcoin with OpenTimestamps as a free backup."
+            : "Each tip is written in its own transaction straight away (ANCHOR_MODE=single). Set ANCHOR_MODE=batch to write one transaction an hour instead."}
+        </p>
+        {appConfig.anchorMode === "batch" && (
+          batches.length === 0 ? (
+            <p className="mt-3 text-sm text-ink/60">No batches yet. The first one runs at the next hourly job once the contract is set up.</p>
+          ) : (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="text-ink/60">
+                  <tr>{["When", "Tips", "Base", "Bitcoin backup", "Root"].map((h) => <th key={h} className="py-2 pr-3 font-medium">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {batches.map((b) => {
+                    const link = txUrl(b.tx_hash, b.chain_id);
+                    return (
+                      <tr key={b.id} className="border-t border-ink/10 align-top">
+                        <td className="whitespace-nowrap py-2 pr-3 text-ink/70">{new Date(b.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
+                        <td className="py-2 pr-3 tabular-nums">{b.leaf_count}</td>
+                        <td className="py-2 pr-3">
+                          {b.status === "confirmed" ? <StatusPill tone="good">recorded</StatusPill> : b.status === "failed" ? <StatusPill tone="warn">failed, will retry</StatusPill> : <StatusPill tone="neutral">sending</StatusPill>}
+                          {link && <a href={link} target="_blank" rel="noreferrer" className="ml-2 text-xs underline">View</a>}
+                        </td>
+                        <td className="py-2 pr-3">
+                          {b.ots_status === "submitted" ? (
+                            <span className="flex flex-wrap items-center gap-2">
+                              <StatusPill tone="good">stamped</StatusPill>
+                              <a href={`/api/v1/batches/${b.id}/ots`} className="text-xs underline">.ots</a>
+                              <a href={`/api/v1/batches/${b.id}/root`} className="text-xs underline">root</a>
+                            </span>
+                          ) : b.ots_status === "failed" ? <StatusPill tone="warn">will retry</StatusPill> : <StatusPill tone="neutral">waiting</StatusPill>}
+                        </td>
+                        <td className="max-w-[180px] truncate py-2 pr-3 font-mono text-xs text-ink/60" title={b.merkle_root}>{b.merkle_root}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        )}
+      </section>
 
       <dl className="mt-6 rounded-xl border border-ink/10 bg-white px-5 py-2">
         <Row label="Protocol version">{protocolVersion}</Row>

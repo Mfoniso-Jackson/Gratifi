@@ -30,12 +30,12 @@ describe("covering the card fee", () => {
   it("puts the fee on its own checkout line and records the tip amount in metadata", async () => {
     const create = vi.fn(async (params: any) => ({ url: "https://checkout.stripe.test", ...params }));
     const service = new PaymentService({ checkout: { sessions: { create } } } as unknown as Stripe);
-    await service.createCheckoutSession({ workerId: WORKER, venueId: VENUE, amountPence: 500, coverFee: true });
+    await service.createCheckoutSession({ workerId: WORKER, venueId: VENUE, amountPence: 500, coverFee: true, venueAccountId: "acct_1" });
     const params = create.mock.calls[0][0];
     expect(params.line_items.map((item: any) => item.price_data.unit_amount)).toEqual([500, 28]);
     expect(params.metadata).toMatchObject({ tipPence: "500", coverFeePence: "28" });
 
-    await service.createCheckoutSession({ workerId: WORKER, venueId: VENUE, amountPence: 500 });
+    await service.createCheckoutSession({ workerId: WORKER, venueId: VENUE, amountPence: 500, venueAccountId: "acct_1" });
     expect(create.mock.calls[1][0].line_items).toHaveLength(1);
   });
 

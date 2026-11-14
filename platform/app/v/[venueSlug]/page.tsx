@@ -7,6 +7,8 @@ import { WorkerService } from "@/lib/services/WorkerService";
 import { recordScan, visitSource } from "@/lib/services/ScanService";
 import { loadVenueAccess } from "@/lib/billing/access";
 import { PausedVenue } from "@/components/PausedVenue";
+import { canTakeCardTips } from "@/lib/payouts/ConnectService";
+import { isDemoMode } from "@/lib/demo/mode";
 import { sponsorsEnabled } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +27,7 @@ export default async function VenuePage({
   const source = visitSource(await searchParams);
   if (source) await recordScan(db, { venueId: venue.data.id, source });
   if (!(await loadVenueAccess(db, venue.data)).takingTips) return <PausedVenue venueName={venue.data.name} />;
+  if (!isDemoMode() && !canTakeCardTips(venue.data)) return <PausedVenue venueName={venue.data.name} reason="setting_up" />;
   const workers = await new WorkerService(db).listByVenue(venue.data.id);
   const team = workers.data ?? [];
 

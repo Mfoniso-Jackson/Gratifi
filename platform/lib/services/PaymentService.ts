@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { appConfig } from "@/lib/config";
 import { coverFeePence } from "@/lib/payments/fees";
+import { destinationCharge, payoutsRequired } from "@/lib/payouts/ConnectService";
 
 export class PaymentService {
   private client: Stripe | undefined;
@@ -23,16 +24,22 @@ export class PaymentService {
     dreamLinked?: boolean;
     /** The customer chose to add the card fee so the staff member gets the whole tip. */
     coverFee?: boolean;
+    /** The venue's Stripe Express account: the tip is paid to the venue, not to GratiFi. */
+    venueAccountId?: string | null;
   }) {
     if (input.amountPence < appConfig.minTipAmountPence || input.amountPence > appConfig.maxTipAmountPence) {
       throw new Error("Amount is outside configured recognition limits.");
     }
 
     const feePence = input.coverFee ? coverFeePence(input.amountPence) : 0;
+    if (!input.venueAccountId && payoutsRequired()) {
+      throw new Error("This venue hasn't set up payouts yet.");
+    }
 
     return this.stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
+      ...(input.venueAccountId ? { payment_intent_data: destinationCharge(input.venueAccountId, input.amountPence + feePence) } : {}),
       line_items: [
         {
           quantity: 1,

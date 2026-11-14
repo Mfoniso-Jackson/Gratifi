@@ -5,6 +5,7 @@ import { getAdminContext, type AdminContext } from "@/lib/auth/access";
 import { loadVenueAccess } from "@/lib/billing/access";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sponsorsEnabled } from "@/lib/features";
+import { canTakeCardTips } from "@/lib/payouts/ConnectService";
 
 function DemoBanner() {
   if (!isDemoMode()) return null;
@@ -44,6 +45,8 @@ export function PublicShell({ children, minimal = false }: { children: React.Rea
         <div className="flex flex-col justify-between gap-2 border-t border-ink/10 pt-6 sm:flex-row">
           <span>
             © {new Date().getFullYear()} GratiFi ·{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-ink">Privacy</Link> ·{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link> ·{" "}
             <Link href="/privacy/requests" className="underline underline-offset-2 hover:text-ink">Your data</Link>
           </span>
           <span>Payments secured by Stripe. No customer account needed.</span>
@@ -57,25 +60,28 @@ export function PublicShell({ children, minimal = false }: { children: React.Rea
 async function PlanBanner({ context }: { context: AdminContext | null }) {
   if (!context || context.role !== "venue_owner" || !context.venueIds?.length) return null;
   const db = createServiceClient();
-  const venues = ((await db.from("venues").select("id, name, created_at, billing_exempt").in("id", context.venueIds)).data ?? []) as any[];
-  const notices: Array<{ venue: any; text: string; urgent: boolean }> = [];
+  const venues = ((await db.from("venues").select("id, name, created_at, billing_exempt, stripe_account_id, stripe_charges_enabled").in("id", context.venueIds)).data ?? []) as any[];
+  const notices: Array<{ venue: any; text: string; urgent: boolean; href?: string; action?: string }> = [];
   for (const venue of venues) {
     const access = await loadVenueAccess(db, venue);
     const days = `${access.daysLeft} day${access.daysLeft === 1 ? "" : "s"}`;
     if (access.state === "paused") notices.push({ venue, urgent: true, text: `${venue.name} has stopped taking tips because its pilot ended without a plan. Choose a plan to restart straight away.` });
     else if (access.state === "grace") notices.push({ venue, urgent: true, text: `${venue.name}'s pilot has ended. Choose a plan within ${days} to keep taking tips.` });
     else if (access.state === "pilot" && access.daysLeft <= 7) notices.push({ venue, urgent: false, text: `${days} left in ${venue.name}'s free pilot.` });
+    if (!isDemoMode() && !canTakeCardTips(venue)) {
+      notices.push({ venue, urgent: true, href: `/admin/venues/${venue.id}`, action: "Set up payouts", text: `${venue.name} can't take card tips until payouts are set up with Stripe.` });
+    }
   }
   if (notices.length === 0) return null;
   return (
     <div className="mb-6 grid gap-2">
-      {notices.map(({ venue, text, urgent }) => (
+      {notices.map(({ venue, text, urgent, href, action }) => (
         <Link
-          key={venue.id}
-          href={`/admin/billing?venueId=${venue.id}`}
+          key={`${venue.id}-${action ?? "plan"}`}
+          href={href ?? `/admin/billing?venueId=${venue.id}`}
           className={`rounded-xl px-4 py-3 text-sm ${urgent ? "bg-coral/15 text-[#8f2e1f]" : "bg-[#fff6e5] text-ink"}`}
         >
-          {text} <span className="font-semibold underline">Choose a plan</span>
+          {text} <span className="font-semibold underline">{action ?? "Choose a plan"}</span>
         </Link>
       ))}
     </div>

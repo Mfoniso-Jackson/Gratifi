@@ -67,3 +67,20 @@ Use this checklist after the repo is deployed and before taking live payments.
 - Data requests arrive at `/admin/data-requests` from the public form at `/privacy/requests`. Reply within one month, and check who the person is before sending data or erasing anything.
 - Sponsors are invoiced for placement fees from each sponsor's page (Stripe Invoicing).
 - Run the browser tests locally with `pnpm test:e2e`; CI runs them on every pull request.
+
+## Hourly batches, legal pages and fees (migration 012)
+
+- Apply `supabase/migrations/012_batches_timestamps_fees.sql`.
+- Add repository secrets `GRATIFI_APP_URL` and `CRON_SECRET` so the hourly batch runs
+  (`.github/workflows/anchor-hourly.yml`). Check the first batch on the Protocol page.
+- Get `/privacy` and `/terms` reviewed: fill in every [bracketed] detail, answer the "For review"
+  boxes, then remove the draft banner in `components/LegalPage.tsx`.
+- The Overview shows how often customers cover the card fee.
+
+## Venue payouts (migration 013)
+
+- Apply `supabase/migrations/013_venue_payouts.sql`.
+- Enable Stripe Connect (Express) and add `account.updated` from connected accounts to the webhook.
+  See `docs/stripe-connect.md`.
+- Each venue sets up payouts from its venue page before it can take card tips.
+- Before the first refund, check the steps for reversing the transfer to the venue.

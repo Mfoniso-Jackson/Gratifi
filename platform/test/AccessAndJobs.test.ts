@@ -4,6 +4,7 @@ import { canAccessVenue, loadAccess, scopeToVenues, type AdminContext } from "@/
 import { countBySource, isQrVisit, recordScan, scanToTipRate, visitSource } from "@/lib/services/ScanService";
 import { QRService } from "@/lib/services/QRService";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
+import { appConfig } from "@/lib/config";
 import { GET as retryJob } from "@/app/api/cron/retry-anchoring/route";
 
 const CAFE = "de30a001-0000-4000-8000-000000000001";
@@ -108,6 +109,14 @@ describe("automatic anchoring retries", () => {
   });
   afterEach(() => {
     process.env = { ...original };
+    appConfig.anchorMode = "batch";
+  });
+
+  it("in batch mode, waits for the chain to be configured before writing a batch", async () => {
+    process.env.CRON_SECRET = "right";
+    const request = new Request("http://localhost/api/cron/retry-anchoring", { headers: { authorization: "Bearer right" } });
+    const body = await (await retryJob(request)).json();
+    expect(body).toMatchObject({ action: "skipped" });
   });
 
   it("refuses to run without CRON_SECRET, or with the wrong one", async () => {
@@ -118,7 +127,8 @@ describe("automatic anchoring retries", () => {
     expect((await retryJob(wrong)).status).toBe(401);
   });
 
-  it("retries failed and stale pending recognitions", async () => {
+  it("in single mode, retries failed and stale pending recognitions", async () => {
+    appConfig.anchorMode = "single";
     process.env.CRON_SECRET = "right";
     const request = new Request("http://localhost/api/cron/retry-anchoring", { headers: { authorization: "Bearer right" } });
     const response = await retryJob(request);
@@ -134,7 +144,23 @@ describe("automatic anchoring retries", () => {
     await db.from("recognition_events").update({ anchor_status: "confirmed" }).eq("anchor_status", "retry");
     const recent = new Date().toISOString();
     await db.from("recognition_events").update({ created_at: recent }).eq("anchor_status", "pending");
-    const result = await new RecognitionEngine(db).retryStuck({ staleMinutes: 10 });
+    const result = (await new RecognitionEngine(db, undefined, undefined, "single").retryStuck({ staleMinutes: 10 })) as { attempted: number };
     expect(result.attempted).toBe(0);
+  });
+});
+
+describe("tip list API", () => {
+  const original = { ...process.env };
+  afterEach(() => {
+    process.env = { ...original };
+  });
+
+  it("refuses anyone who isn't signed in, because tips include customers' notes", async () => {
+    process.env.GRATIFI_DEMO_MODE = "false";
+    vi.resetModules();
+    vi.doMock("@/lib/auth/access", async (orig) => ({ ...(await orig<typeof import("@/lib/auth/access")>()), getAdminContext: async () => null, adminApiAccess: async () => Response.json({ error: "Sign in" }, { status: 401 }) }));
+    const { GET } = await import("@/app/api/v1/recognitions/route");
+    expect((await GET()).status).toBe(401);
+    vi.doUnmock("@/lib/auth/access");
   });
 });

@@ -3,6 +3,7 @@ import type { RecognitionPayload } from "@/lib/types/domain";
 import { saveSubscription } from "@/lib/billing/BillingService";
 import { applySponsorInvoiceEvent } from "@/lib/sponsors/InvoiceService";
 import { tipFromSession } from "@/lib/payments/fees";
+import { applyAccountUpdate } from "@/lib/payouts/ConnectService";
 
 /**
  * Applies a verified Stripe event to GratiFi's records.
@@ -27,6 +28,7 @@ export type WebhookOutcome =
   | { action: "status_updated"; paymentIntentId: string; stripeStatus: string }
   | { action: "subscription_saved"; subscriptionId: string }
   | { action: "sponsor_invoice_updated"; invoiceId: string }
+  | { action: "venue_payouts_updated"; accountId: string }
   | { action: "ignored"; reason: string };
 
 /** Stripe statuses that no longer count as money given to staff. */
@@ -70,7 +72,8 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
         currency: "GBP",
         message: message ?? null,
         stripePaymentIntentId: intentId,
-        stripeStatus: session.payment_status
+        stripeStatus: session.payment_status,
+        feeCoveredPence: Math.max(0, Math.min(10_000, Number(session.metadata?.coverFeePence) || 0))
       });
       if (session.metadata?.dreamLinked === "true" && deps.applyDreamTip) {
         await deps.applyDreamTip({
@@ -121,6 +124,14 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       return (await applySponsorInvoiceEvent(deps.db, event.type, invoice))
         ? { action: "sponsor_invoice_updated", invoiceId: invoice.id as string }
         : { action: "ignored", reason: "Not a sponsor invoice" };
+    }
+
+    // Sent for connected accounts (enable "Connected accounts" events on the webhook endpoint).
+    case "account.updated": {
+      const account = event.data.object as Stripe.Account;
+      return (await applyAccountUpdate(deps.db, account))
+        ? { action: "venue_payouts_updated", accountId: account.id }
+        : { action: "ignored", reason: "Not a GratiFi venue account" };
     }
 
     default:
