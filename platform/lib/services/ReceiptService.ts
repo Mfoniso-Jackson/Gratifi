@@ -6,7 +6,7 @@ import type Stripe from "stripe";
  */
 export type Receipt =
   | { state: "recorded"; event: any; dreamContribution: { from_tip_pence: number; match_pence: number } | null }
-  | { state: "recording"; event: any }
+  | { state: "recording"; event: any; dreamContribution?: { from_tip_pence: number; match_pence: number } | null }
   | { state: "unpaid"; workerId: string | null }
   | { state: "invalid" };
 
@@ -38,6 +38,8 @@ export async function loadReceipt(
     : null;
   if (recorded) {
     const contribution = (await db.from("dream_contributions").select("from_tip_pence, match_pence").eq("recognition_event_id", recorded.id).maybeSingle()).data ?? null;
+    // Saved, but only "recorded" once the on-chain write is confirmed (it may be waiting to retry).
+    if (recorded.anchor_status !== "confirmed") return { state: "recording", event: recorded, dreamContribution: contribution };
     return { state: "recorded", event: recorded, dreamContribution: contribution };
   }
 

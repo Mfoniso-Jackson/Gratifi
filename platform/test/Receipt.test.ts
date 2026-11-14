@@ -29,6 +29,13 @@ describe("live thank-you page", () => {
     if (receipt.state === "recorded") expect(receipt.event.recognition_hash).toMatch(/^0x/);
   });
 
+  it("says the tip is still being recorded while the on-chain write waits to retry", async () => {
+    // pi_demo_0004 is a sample tip whose on-chain write is marked "retry".
+    const receipt = await loadReceipt(createDemoClient({ env: {} }), SESSION, session({ payment_intent: "pi_demo_0004" }));
+    expect(receipt.state).toBe("recording");
+    expect(receipt.state === "recording" && receipt.event.anchor_status).toBe("retry");
+  });
+
   it("shows what was paid while the webhook is still on its way", async () => {
     const receipt = await loadReceipt(createDemoClient({ env: {} }), SESSION, session({ payment_intent: "pi_not_yet" }));
     expect(receipt).toMatchObject({ state: "recording", event: { amount_pence: 500, message: "Ta!", workers: { display_name: "Maya" } } });

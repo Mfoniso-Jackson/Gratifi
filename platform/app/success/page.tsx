@@ -51,7 +51,7 @@ export default async function SuccessPage({
   if (dream && event) await recordSponsorView(db, { campaignId: dream.campaign_id, venueId: event.venue_id, page: "thank_you" });
 
   // Demo checkout passes dream progress in the URL; live payments read it from the recorded contribution.
-  const contribution = receipt?.state === "recorded" ? receipt.dreamContribution : null;
+  const contribution = receipt?.state === "recorded" || receipt?.state === "recording" ? receipt.dreamContribution ?? null : null;
   const dreamLinked = params.dream === "1" || Boolean(contribution);
   const matchedPence = contribution
     ? contribution.match_pence

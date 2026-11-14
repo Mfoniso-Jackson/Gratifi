@@ -36,6 +36,8 @@ async function eraseSelected(formData: FormData) {
   if (formData.get("confirmed") !== "on") throw new Error("Confirm you've checked who the person is first.");
   const { db, request } = await loadRequest(String(formData.get("requestId")));
   if (!request) throw new Error("Request not found.");
+  // Access and correction requests never erase anything.
+  if (request.request_type !== "delete") throw new Error("Only deletion requests can erase data.");
   const workerIds = formData.getAll("workerIds").map(String);
   const tipIds = formData.getAll("tipIds").map(String);
 
@@ -75,18 +77,32 @@ async function setStatus(formData: FormData) {
 const pounds = (p: number | null) => (p == null ? "—" : `£${(p / 100).toFixed(2)}`);
 const day = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-export default async function DataRequestPage({ params }: { params: Promise<{ requestId: string }> }) {
+const TIP_LIMIT = 50;
+
+export default async function DataRequestPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ requestId: string }>;
+  searchParams: Promise<{ tipSearch?: string }>;
+}) {
   await requireGlobalAdmin();
   const { requestId } = await params;
+  const tipSearch = String((await searchParams).tipSearch ?? "").trim().toLowerCase();
   const { db, request } = await loadRequest(requestId);
   if (!request) notFound();
 
   const isCustomer = request.requester_type === "customer";
   const autoWorkers = isCustomer ? [] : await linkedWorkers(db, request.email);
   const workers = isCustomer ? [] : (((await db.from("workers").select("id, display_name, role, status, venues(name)").order("display_name")).data ?? []) as any[]);
-  const tips = isCustomer
-    ? matchCustomerTips(((await db.from("recognition_events").select("*, venues(name), workers(display_name)")).data ?? []) as any[], request).slice(0, 50)
+  const isDelete = request.request_type === "delete";
+  // Narrow by staff name or note text so every matching tip can be reached, not just the first page.
+  const matchingTips = isCustomer
+    ? matchCustomerTips(((await db.from("recognition_events").select("*, venues(name), workers(display_name)").order("created_at", { ascending: false })).data ?? []) as any[], request).filter(
+        (t) => !tipSearch || `${t.workers?.display_name ?? ""} ${t.message ?? ""}`.toLowerCase().includes(tipSearch)
+      )
     : [];
+  const tips = matchingTips.slice(0, TIP_LIMIT);
 
   return (
     <AdminShell>
@@ -104,7 +120,16 @@ export default async function DataRequestPage({ params }: { params: Promise<{ re
         {request.admin_note && <div className="sm:col-span-2"><dt className="text-ink/50">Log</dt><dd className="whitespace-pre-wrap font-mono text-xs">{request.admin_note}</dd></div>}
       </dl>
 
-      <form action={eraseSelected} className="mt-6 grid gap-4 rounded-xl border border-ink/10 bg-white p-5">
+      {isCustomer && (
+        <form className="mt-6 flex flex-wrap items-end gap-2 text-sm">
+          <label className="grid gap-1">Search matching tips by staff name or note
+            <input name="tipSearch" defaultValue={tipSearch} className="rounded-md border border-ink/15 px-3 py-2" />
+          </label>
+          <button className="rounded-md border border-ink/15 bg-white px-4 py-2">Search</button>
+        </form>
+      )}
+
+      <form action={eraseSelected} className="mt-4 grid gap-4 rounded-xl border border-ink/10 bg-white p-5">
         <input type="hidden" name="requestId" value={request.id} />
         <h2 className="font-semibold">{isCustomer ? "Matching tips" : "Their staff records"}</h2>
         {isCustomer ? (
@@ -112,6 +137,9 @@ export default async function DataRequestPage({ params }: { params: Promise<{ re
             <p className="text-sm text-ink/60">No tips match. Ask the person for the venue, date and amount.</p>
           ) : (
             <div className="grid gap-2 text-sm">
+              {matchingTips.length > tips.length && (
+                <p className="text-ink/60">Showing the newest {tips.length} of {matchingTips.length} matching tips. Search above to find others.</p>
+              )}
               {tips.map((t) => (
                 <label key={t.id} className="flex items-start gap-3 rounded-lg bg-[#f6f7f2] p-3">
                   <input type="checkbox" name="tipIds" value={t.id} className="mt-1" />
@@ -137,14 +165,20 @@ export default async function DataRequestPage({ params }: { params: Promise<{ re
           <button formAction={`/api/admin/data-requests/${request.id}/export`} formMethod="get" className="rounded-md border border-ink/15 px-4 py-2 text-sm">
             Download their data (JSON)
           </button>
-          <label className="flex items-center gap-2 text-sm">
-            <input id="confirmed" type="checkbox" name="confirmed" />
-            I&apos;ve confirmed this is the person
-          </label>
-          <button className="rounded-md bg-[#b33a26] px-4 py-2 text-sm text-white">Erase selected</button>
+          {isDelete && (
+            <>
+              <label className="flex items-center gap-2 text-sm">
+                <input id="confirmed" type="checkbox" name="confirmed" />
+                I&apos;ve confirmed this is the person
+              </label>
+              <button className="rounded-md bg-[#b33a26] px-4 py-2 text-sm text-white">Erase selected</button>
+            </>
+          )}
         </div>
         <p className="text-xs text-ink/50">
-          Erasing removes names, photos, notes and dreams{isDemoMode() ? "" : " and deletes the staff member's sign-in"}. Tip amounts and payment references stay for tax records.
+          {isDelete
+            ? `Erasing removes names, photos, notes and dreams${isDemoMode() ? "" : " and deletes the staff member's sign-in"}. Tip amounts and payment references stay for tax records.`
+            : "This request didn't ask for deletion, so erasing is switched off. Make corrections from the Staff or Tips pages."}
         </p>
       </form>
 
