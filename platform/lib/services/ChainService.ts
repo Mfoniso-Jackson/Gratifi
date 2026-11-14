@@ -5,7 +5,10 @@ import { chainInfo } from "@/lib/chains";
 const abi = [
   "function recordRecognition(bytes32 recognitionHash, bytes32 venueHash, bytes32 workerHash, bytes32 messageHash, uint256 amountPence)",
   "function isRecognitionRecorded(bytes32 recognitionHash) view returns (bool)",
-  "function getRecognitionCount() view returns (uint256)"
+  "function getRecognitionCount() view returns (uint256)",
+  "function recordBatch(bytes32 merkleRoot, uint256 leafCount)",
+  "function isBatchRecorded(bytes32 merkleRoot) view returns (bool)",
+  "function getBatchCount() view returns (uint256)"
 ];
 
 export interface AnchorRecordInput {
@@ -62,17 +65,34 @@ export class ChainService {
     };
   }
 
-  async recordRecognition(input: AnchorRecordInput) {
-    if (!appConfig.chain.rpcUrl || !appConfig.chain.operatorPrivateKey || !appConfig.chain.contractAddress) {
-      throw new Error("The blockchain record is not configured.");
-    }
+  /** True when an RPC endpoint, operator key and contract address are all set. */
+  isConfigured() {
+    return Boolean(appConfig.chain.rpcUrl && appConfig.chain.operatorPrivateKey && appConfig.chain.contractAddress);
+  }
+
+  private writableContract() {
+    if (!this.isConfigured()) throw new Error("The blockchain record is not configured.");
     if (chainInfo(appConfig.chain.chainId)?.retired) {
       throw new Error(`${chainInfo(appConfig.chain.chainId)?.name} no longer accepts records. Set CHAIN_ID to Base (8453).`);
     }
-
     const provider = new ethers.JsonRpcProvider(appConfig.chain.rpcUrl, appConfig.chain.chainId);
     const wallet = new ethers.Wallet(appConfig.chain.operatorPrivateKey, provider);
-    const contract = new ethers.Contract(appConfig.chain.contractAddress, abi, wallet);
+    return new ethers.Contract(appConfig.chain.contractAddress, abi, wallet);
+  }
+
+  /** Writes one hourly batch: the Merkle root of every tip in it (see lib/anchoring/merkle.ts). */
+  async recordBatch(merkleRoot: string, leafCount: number) {
+    const contract = this.writableContract();
+    if (await contract.isBatchRecorded(merkleRoot)) {
+      return { txHash: null, blockNumber: null, chainId: appConfig.chain.chainId, alreadyRecorded: true };
+    }
+    const tx = await contract.recordBatch(merkleRoot, leafCount);
+    const receipt = await tx.wait();
+    return { txHash: receipt.hash as string, blockNumber: Number(receipt.blockNumber), chainId: appConfig.chain.chainId, alreadyRecorded: false };
+  }
+
+  async recordRecognition(input: AnchorRecordInput) {
+    const contract = this.writableContract();
 
     const alreadyRecorded = await contract.isRecognitionRecorded(input.recognitionHash);
     if (alreadyRecorded) {

@@ -49,3 +49,12 @@ test("pages fit a phone screen", async ({ browser }) => {
   }
   await phone.close();
 });
+
+test("privacy notice and terms are linked from every public page", async ({ page }) => {
+  await page.goto("/");
+  await page.locator("footer").getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByRole("heading", { name: "Privacy notice" })).toBeVisible();
+  await expect(page.getByText("Draft for legal review.")).toBeVisible();
+  await page.locator("footer").getByRole("link", { name: "Terms" }).click();
+  await expect(page.getByRole("heading", { name: "Terms", exact: true })).toBeVisible();
+});

@@ -8,6 +8,11 @@ export const appConfig = {
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
   minTipAmountPence: Number(process.env.MIN_TIP_AMOUNT_PENCE ?? 200),
   maxTipAmountPence: Number(process.env.MAX_TIP_AMOUNT_PENCE ?? 50000),
+  /**
+   * "batch" (default): tips are collected and written as one Merkle root an hour (cheapest).
+   * "single": each tip is written straight away in its own transaction.
+   */
+  anchorMode: (process.env.ANCHOR_MODE === "single" ? "single" : "batch") as "batch" | "single",
   /** The network new tip records are written to (Base by default). */
   chain: {
     chainId,

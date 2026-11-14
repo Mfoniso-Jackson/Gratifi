@@ -44,6 +44,8 @@ export function PublicShell({ children, minimal = false }: { children: React.Rea
         <div className="flex flex-col justify-between gap-2 border-t border-ink/10 pt-6 sm:flex-row">
           <span>
             © {new Date().getFullYear()} GratiFi ·{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-ink">Privacy</Link> ·{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-ink">Terms</Link> ·{" "}
             <Link href="/privacy/requests" className="underline underline-offset-2 hover:text-ink">Your data</Link>
           </span>
           <span>Payments secured by Stripe. No customer account needed.</span>

@@ -7,10 +7,15 @@ import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { isDemoMode } from "@/lib/demo/mode";
 import { applyDreamTip } from "@/lib/dreams/DreamService";
 import { loadVenueAccess } from "@/lib/billing/access";
+import { adminApiAccess, scopeToVenues } from "@/lib/auth/access";
+import { coverFeePence } from "@/lib/payments/fees";
 
+/** Latest tips, for signed-in admins and venue owners only (scoped to their venues). Tips include notes. */
 export async function GET() {
+  const access = await adminApiAccess();
+  if (access instanceof Response) return access;
   const db = createServiceClient();
-  const result = await db.from("recognition_events").select("*").order("created_at", { ascending: false }).limit(100);
+  const result = await scopeToVenues(db.from("recognition_events").select("*"), access).order("created_at", { ascending: false }).limit(100);
   if (result.error) return protocolError(result.error.message, 500);
   return Response.json(protocolResponse(result.data));
 }
@@ -40,7 +45,8 @@ export async function POST(request: Request) {
       currency: "GBP",
       message,
       stripePaymentIntentId: `pi_demo_${crypto.randomUUID()}`,
-      stripeStatus: "paid"
+      stripeStatus: "paid",
+      feeCoveredPence: form.get("coverFee") === "on" ? coverFeePence(amountPence) : 0
     });
     const dreamTip =
       form.get("dreamLinked") === "on"

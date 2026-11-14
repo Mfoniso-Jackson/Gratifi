@@ -31,6 +31,12 @@ export default async function AdminPage() {
   const tips30 = rows.filter((event) => event.created_at >= since).length;
   const rate = scanToTipRate(scans30, tips30);
 
+  // How often customers ticked "cover the card fee", over the same 30 days.
+  const counted30 = rows.filter((event) => event.created_at >= since && !REVERSED_STRIPE_STATUSES.includes(event.stripe_status));
+  const feeCovered30 = counted30.filter((event) => (event.fee_covered_pence ?? 0) > 0);
+  const feePence30 = feeCovered30.reduce((sum, event) => sum + (event.fee_covered_pence ?? 0), 0);
+  const feeRate = counted30.length ? Math.round((feeCovered30.length / counted30.length) * 100) : null;
+
   return (
     <AdminShell>
       <h1 className="text-3xl font-bold">Overview</h1>
@@ -40,6 +46,12 @@ export default async function AdminPage() {
         <Stat label="Pending anchoring" value={String(rows.filter((e) => e.anchor_status !== "confirmed").length)} />
         <Stat label="Scans and taps (30 days)" value={`${scans30}${visits30.nfc ? ` · ${visits30.nfc} NFC` : ""}`} />
         <Stat label="Scans that led to a tip" value={rate === null ? "No scans yet" : `${rate}%`} />
+      </div>
+      <div className="mt-4 rounded-xl border border-ink/10 bg-white p-4 text-sm">
+        <span className="font-semibold">Card fees covered by customers (30 days): </span>
+        {feeRate === null
+          ? "No tips yet."
+          : `${feeCovered30.length} of ${counted30.length} tips (${feeRate}%), £${(feePence30 / 100).toFixed(2)} in card fees paid by customers.`}
       </div>
 
       <div className="mt-8 flex items-center justify-between">

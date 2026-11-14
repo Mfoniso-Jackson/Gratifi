@@ -52,6 +52,10 @@ export interface RecognitionEvent {
   anchor_contract_address: string | null;
   /** The network the record was written to (8453 Base; 1284 for older Moonbeam records). */
   anchor_chain_id: number | null;
+  /** The hourly batch this tip was recorded in, and its proof against the batch's Merkle root. */
+  anchor_batch_id?: string | null;
+  merkle_proof?: string[] | null;
+  fee_covered_pence?: number;
   protocol_version: string;
   created_at: string;
   confirmed_at: string | null;
@@ -65,4 +69,6 @@ export interface RecognitionPayload {
   message?: string | null;
   stripePaymentIntentId: string;
   stripeStatus: string;
+  /** Card fee the customer chose to add on top of the tip (never part of the tip). */
+  feeCoveredPence?: number;
 }

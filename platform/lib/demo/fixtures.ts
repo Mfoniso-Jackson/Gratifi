@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
 import { defaultChecklist } from "@/lib/services/PilotService";
+import { buildMerkleBatch } from "@/lib/anchoring/merkle";
+import { coverFeePence } from "@/lib/payments/fees";
+import { detachedOtsFile, otsDigest, pendingTimestamp } from "@/lib/anchoring/opentimestamps";
 
 type Row = Record<string, any>;
 
@@ -161,9 +164,47 @@ export function buildDemoData(): Record<string, Row[]> {
       // The three oldest sample tips were written to Moonbeam before it shut down; the rest are on Base.
       anchor_chain_id: status === "confirmed" ? (ago >= 16 ? 1284 : 8453) : null,
       protocol_version: "gratifi-v1",
+      // About a third of customers chose to cover the card fee.
+      fee_covered_pence: i % 3 === 1 ? coverFeePence(amounts[i % amounts.length]) : 0,
       created_at: daysAgo(ago, 9 + (i % 9)),
       confirmed_at: status === "confirmed" ? daysAgo(ago, 10 + (i % 9)) : null
     };
+  });
+
+  // Sample hourly batches: confirmed Base tips grouped by day, each with a real Merkle root and proofs.
+  // Older Moonbeam tips were recorded one by one, before batching.
+  const anchor_batches: Row[] = [];
+  const byDay = new Map<string, Row[]>();
+  for (const event of recognition_events) {
+    if (event.anchor_status !== "confirmed" || event.anchor_chain_id !== 8453) continue;
+    const day = String(event.created_at).slice(0, 10);
+    byDay.set(day, [...(byDay.get(day) ?? []), event]);
+  }
+  [...byDay.entries()].forEach(([, tips], n) => {
+    const { root, proofs } = buildMerkleBatch(tips.map((t) => t.recognition_hash));
+    const id = demoUuid("de30ba7c", n + 1);
+    const txHash = hex(`demo-batch-tx-${n}`);
+    const confirmedAt = tips[tips.length - 1].confirmed_at;
+    tips.forEach((tip, i) =>
+      Object.assign(tip, { anchor_batch_id: id, merkle_proof: proofs[i], anchor_tx_hash: txHash, anchor_block_number: 21_400_000 + n * 1800 })
+    );
+    const calendar = "https://alice.btc.calendar.opentimestamps.org";
+    anchor_batches.push({
+      id,
+      merkle_root: root,
+      leaf_count: tips.length,
+      chain_id: 8453,
+      contract_address: "0x0000000000000000000000000000000000de3000",
+      status: "confirmed",
+      tx_hash: txHash,
+      block_number: 21_400_000 + n * 1800,
+      error: null,
+      ots_status: "submitted",
+      // Sample proof: a pending attestation, as a calendar returns before Bitcoin confirms it.
+      ots_proofs: [{ calendar, proof: Buffer.from(detachedOtsFile(otsDigest(root), pendingTimestamp(calendar))).toString("base64") }],
+      created_at: confirmedAt,
+      confirmed_at: confirmedAt
+    });
   });
 
   const doneKeys = [
@@ -314,6 +355,7 @@ export function buildDemoData(): Record<string, Row[]> {
   ];
 
   return {
+    anchor_batches,
     data_requests,
     venues,
     workers,

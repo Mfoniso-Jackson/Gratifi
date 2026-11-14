@@ -2,6 +2,7 @@ import { z } from "zod";
 import { appConfig, protocolVersion } from "@/lib/config";
 import { HashService } from "@/lib/services/HashService";
 import { ChainService } from "@/lib/services/ChainService";
+import { AnchorBatchService } from "@/lib/anchoring/AnchorBatchService";
 import type { RecognitionPayload } from "@/lib/types/domain";
 
 const RecognitionSchema = z.object({
@@ -11,14 +12,17 @@ const RecognitionSchema = z.object({
   currency: z.literal("GBP"),
   message: z.string().trim().max(280).optional().nullable(),
   stripePaymentIntentId: z.string().min(3),
-  stripeStatus: z.string().min(2)
+  stripeStatus: z.string().min(2),
+  feeCoveredPence: z.number().int().min(0).max(10_000).optional()
 });
 
 export class RecognitionEngine {
   constructor(
     private readonly db: any,
     private readonly hashService = new HashService(),
-    private readonly chainService = new ChainService()
+    private readonly chainService = new ChainService(),
+    private readonly mode: "batch" | "single" = appConfig.anchorMode,
+    private readonly batches: () => { run(): Promise<unknown> } = () => new AnchorBatchService(db)
   ) {}
 
   validate(payload: RecognitionPayload) {
@@ -58,6 +62,7 @@ export class RecognitionEngine {
         recognition_hash: recognitionHash,
         stripe_payment_intent_id: valid.stripePaymentIntentId,
         stripe_status: valid.stripeStatus,
+        fee_covered_pence: valid.feeCoveredPence ?? 0,
         anchor_status: "pending",
         anchor_contract_address: appConfig.chain.contractAddress || null,
         protocol_version: protocolVersion
@@ -66,6 +71,8 @@ export class RecognitionEngine {
       .single();
 
     if (insert.error) throw insert.error;
+    // In batch mode the tip waits for the hourly batch instead of its own transaction.
+    if (this.mode === "batch") return insert.data;
     return this.anchor(insert.data);
   }
 
@@ -106,6 +113,8 @@ export class RecognitionEngine {
    * Called by the scheduled job; processes at most `limit` per run, oldest first.
    */
   async retryStuck(options: { staleMinutes?: number; limit?: number; now?: Date } = {}) {
+    if (this.mode === "batch") return this.batches().run();
+
     const staleMinutes = options.staleMinutes ?? 10;
     const limit = options.limit ?? 25;
     const cutoff = new Date((options.now ?? new Date()).getTime() - staleMinutes * 60_000).toISOString();
@@ -129,7 +138,14 @@ export class RecognitionEngine {
     return { attempted: due.length, confirmed, stillFailing: due.length - confirmed };
   }
 
+  /** "Retry now" from the admin. In batch mode this runs the batch straight away for every waiting tip. */
   async retry(eventId: string) {
+    if (this.mode === "batch") {
+      await this.batches().run();
+      const refreshed = await this.db.from("recognition_events").select("*").eq("id", eventId).single();
+      if (refreshed.error) throw refreshed.error;
+      return refreshed.data;
+    }
     const event = await this.db.from("recognition_events").select("*").eq("id", eventId).single();
     if (event.error) throw event.error;
     return this.anchor(event.data);
