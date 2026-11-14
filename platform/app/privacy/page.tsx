@@ -85,10 +85,11 @@ export default function PrivacyPage() {
         </p>
         <p className="mt-2">
           The fingerprint is made from the tip&apos;s details, but <strong>no name, note or card detail can be read from it</strong>.
-          Blockchain records can&apos;t be changed or deleted by anyone, including us. If you ask us to delete your data, we delete
-          everything that identifies you from our systems, so the fingerprint can no longer be linked back to you.
+          Blockchain records can&apos;t be changed or deleted by anyone, including us. Each tip&apos;s fingerprint is mixed with a random secret
+          kept only by us, so a short note can&apos;t be guessed from it. If you ask us to delete your data, we delete that secret along
+          with everything that identifies you, so the fingerprint can never be linked back to you.
         </p>
-        <ForReview>Whether these hashes count as personal data under UK GDPR (they are pseudonymous while we hold the linking data), and whether this explanation and the erasure approach are enough. The note&apos;s fingerprint is a plain hash, so a very short, guessable note could in theory be matched; consider whether to add a secret salt.</ForReview>
+        <ForReview>Whether these hashes count as personal data under UK GDPR (they are pseudonymous while we hold the linking data), and whether this explanation and the erasure approach are enough. Each tip&apos;s fingerprints are salted with a random value kept only in GratiFi&apos;s database, which is erased on a deletion request.</ForReview>
       </section>
 
       <section id="sharing">

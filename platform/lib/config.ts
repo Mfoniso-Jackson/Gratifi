@@ -1,6 +1,7 @@
 import { BASE_MAINNET, chains } from "@/lib/chains";
 
-export const protocolVersion = "gratifi-v1";
+// v2: every tip's hashes are salted (docs/protocol/hashing-standard.md).
+export const protocolVersion = "gratifi-v2";
 
 const chainId = Number(process.env.CHAIN_ID ?? BASE_MAINNET);
 

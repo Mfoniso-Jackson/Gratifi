@@ -10,6 +10,7 @@ import { loadVenueAccess } from "@/lib/billing/access";
 import { adminApiAccess, scopeToVenues } from "@/lib/auth/access";
 import { coverFeePence } from "@/lib/payments/fees";
 import { canTakeCardTips } from "@/lib/payouts/ConnectService";
+import { withoutSalt } from "@/lib/services/HashService";
 
 /** Latest tips, for signed-in admins and venue owners only (scoped to their venues). Tips include notes. */
 export async function GET() {
@@ -18,7 +19,7 @@ export async function GET() {
   const db = createServiceClient();
   const result = await scopeToVenues(db.from("recognition_events").select("*"), access).order("created_at", { ascending: false }).limit(100);
   if (result.error) return protocolError(result.error.message, 500);
-  return Response.json(protocolResponse(result.data));
+  return Response.json(protocolResponse((result.data ?? []).map(withoutSalt)));
 }
 
 export async function POST(request: Request) {

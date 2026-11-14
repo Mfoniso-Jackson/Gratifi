@@ -39,16 +39,18 @@ export class RecognitionEngine {
       throw new Error("Payment is not settled.");
     }
 
-    const message = valid.message?.trim() || null;
-    const recognitionHash = this.hashService.recognitionHash({ ...valid, message });
-    const messageHash = this.hashService.messageHash(message);
-
+    // One recognition per payment: Stripe can send the same event more than once.
     const existing = await this.db
       .from("recognition_events")
       .select("*")
-      .eq("recognition_hash", recognitionHash)
+      .eq("stripe_payment_intent_id", valid.stripePaymentIntentId)
       .maybeSingle();
     if (existing.data) return existing.data;
+
+    const message = valid.message?.trim() || null;
+    const salt = this.hashService.newSalt();
+    const recognitionHash = this.hashService.recognitionHash({ ...valid, message }, salt);
+    const messageHash = this.hashService.messageHash(message, salt);
 
     const insert = await this.db
       .from("recognition_events")
@@ -59,6 +61,7 @@ export class RecognitionEngine {
         currency: valid.currency,
         message,
         message_hash: messageHash,
+        hash_salt: salt,
         recognition_hash: recognitionHash,
         stripe_payment_intent_id: valid.stripePaymentIntentId,
         stripe_status: valid.stripeStatus,
@@ -80,8 +83,8 @@ export class RecognitionEngine {
     try {
       const result = await this.chainService.recordRecognition({
         recognitionHash: event.recognition_hash,
-        venueHash: this.hashService.entityHash(event.venue_id),
-        workerHash: this.hashService.entityHash(event.worker_id),
+        venueHash: this.hashService.entityHash(event.venue_id, event.hash_salt),
+        workerHash: this.hashService.entityHash(event.worker_id, event.hash_salt),
         messageHash: event.message_hash,
         amountPence: event.amount_pence
       });

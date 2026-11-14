@@ -17,7 +17,7 @@
 | `anchor_tx_hash` | String | Public verification | Optional | Present after successful anchoring. |
 | `block_number` | Integer | Public verification | Optional | Stored as `anchor_block_number` in the current implementation. |
 | `contract_address` | String | Public verification | Optional | Stored as `anchor_contract_address` in the current implementation. |
-| `protocol_version` | String | Public verification | Yes | Current value: `gratifi-v1`. |
+| `protocol_version` | String | Public verification | Yes | Current value: `gratifi-v2`. |
 | `status` | String | Public operational | Yes | Derived from `anchor_status`: `pending`, `confirmed`, `failed`, or `retry`. |
 | `created_at` | Timestamp | Public operational | Yes | Recognition creation time. |
 | `confirmed_at` | Timestamp | Public verification | Optional | Set after Base anchoring confirmation. |
@@ -84,7 +84,7 @@ Optional until anchoring completes:
   "anchor_tx_hash": "0xabc123...",
   "block_number": 1234567,
   "contract_address": "0xProtocolContract",
-  "protocol_version": "gratifi-v1",
+  "protocol_version": "gratifi-v2",
   "status": "confirmed",
   "created_at": "2026-07-09T10:00:00.000Z",
   "confirmed_at": "2026-07-09T10:00:30.000Z"

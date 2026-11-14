@@ -1,3 +1,4 @@
+import { withoutSalt } from "@/lib/services/HashService";
 import { createServiceClient } from "@/lib/supabase/server";
 import { RecognitionEngine } from "@/lib/services/RecognitionEngine";
 import { adminApiAccess, canAccessVenue } from "@/lib/auth/access";
@@ -12,5 +13,5 @@ export async function POST(_: Request, { params }: { params: Promise<{ eventId: 
     return Response.json({ error: "Recognition not found." }, { status: 404 });
   }
   const event = await new RecognitionEngine(db).retry(eventId);
-  return Response.json({ data: event });
+  return Response.json({ data: event ? withoutSalt(event) : event });
 }
