@@ -30,6 +30,12 @@ Optional. Defaults to Base's public endpoint for `CHAIN_ID`; use a provider endp
 `CHAIN_OPERATOR_PRIVATE_KEY`  
 Server-only key of the wallet that pays for records. Keep a small ETH balance on Base.
 
+`ANCHOR_MODE`  
+Optional. `batch` (default) writes one Merkle root an hour for every waiting tip; `single` writes each tip in its own transaction.
+
+`OTS_CALENDARS`  
+Optional. Comma-separated OpenTimestamps calendar URLs for the free Bitcoin backup. Defaults to the public calendars.
+
 `CHAIN_LOW_BALANCE`  
 Optional. Warning threshold in ETH for `/api/health/operator-wallet` (default 0.002).
 

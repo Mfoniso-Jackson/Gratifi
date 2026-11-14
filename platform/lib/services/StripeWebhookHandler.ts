@@ -70,7 +70,8 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
         currency: "GBP",
         message: message ?? null,
         stripePaymentIntentId: intentId,
-        stripeStatus: session.payment_status
+        stripeStatus: session.payment_status,
+        feeCoveredPence: Math.max(0, Math.min(10_000, Number(session.metadata?.coverFeePence) || 0))
       });
       if (session.metadata?.dreamLinked === "true" && deps.applyDreamTip) {
         await deps.applyDreamTip({

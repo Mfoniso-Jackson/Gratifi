@@ -6,6 +6,7 @@ import { DreamCard } from "@/components/DreamCard";
 import { getDream, recordSponsorView } from "@/lib/dreams/DreamService";
 import { loadReceipt, type Receipt } from "@/lib/services/ReceiptService";
 import { PaymentService } from "@/lib/services/PaymentService";
+import { appConfig } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,12 @@ export default async function SuccessPage({
   }
 
   const event = receipt?.state === "recorded" || receipt?.state === "recording" ? receipt.event : await loadDemoEvent(params.event);
-  const recording = receipt?.state === "recording";
+  // Not "permanently recorded" until the on-chain write is confirmed (also true of demo tips).
+  const recording = receipt?.state === "recording" || Boolean(event && event.anchor_status && event.anchor_status !== "confirmed");
+  const recordingText =
+    appConfig.anchorMode === "batch"
+      ? "Thank you. Your recognition will be permanently recorded within the hour."
+      : "Thank you. We're recording your recognition now.";
   const dream = event ? await getDream(db, event.worker_id) : null;
   if (dream && event) await recordSponsorView(db, { campaignId: dream.campaign_id, venueId: event.venue_id, page: "thank_you" });
 
@@ -72,7 +78,7 @@ export default async function SuccessPage({
         </span>
         <p className="mt-6 text-sm font-semibold text-coral">{recording ? "Payment received" : "Recognition complete"}</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          {recording ? "Thank you. We're recording your recognition now." : "Thank you — your recognition has been permanently recorded."}
+          {recording ? recordingText : "Thank you — your recognition has been permanently recorded."}
         </h1>
 
         {event && (

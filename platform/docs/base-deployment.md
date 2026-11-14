@@ -43,3 +43,35 @@ show as "Moonbeam (retired)".
 
 The app refuses to write to a retired network: with `CHAIN_ID` still set to 1284 or 1287, tips stay
 in "retry" and the Protocol page shows a warning.
+
+## 4. Hourly batches and the Bitcoin backup
+
+With `ANCHOR_MODE=batch` (the default), tips aren't written one by one. Once an hour the job at
+`/api/cron/retry-anchoring`:
+
+1. collects every tip waiting for its record (`pending` or `retry`);
+2. builds a Merkle tree of their hashes (`lib/anchoring/merkle.ts`; leaf = keccak256(hash), pairs
+   hashed in sorted order, the same as OpenZeppelin's `MerkleProof`);
+3. writes the root with the contract's `recordBatch` (one transaction, about 720 a month);
+4. saves each tip's proof (`recognition_events.merkle_proof`) and the batch (`anchor_batches`);
+5. sends the root's SHA-256 to OpenTimestamps calendars, which commit it to Bitcoin for free.
+
+If the Base write fails, the tips go back to `retry` for the next run. If the calendars are down,
+the Base record still stands and the Bitcoin backup is retried on later runs.
+
+**Running it hourly.** Vercel's free plan only runs scheduled jobs daily (`vercel.json` keeps a daily
+run as a fallback). `.github/workflows/anchor-hourly.yml` calls the job every hour: add the
+repository secrets `GRATIFI_APP_URL` and `CRON_SECRET` to switch it on.
+
+**Checking a tip.** `GET /api/v1/verify/<recognitionHash>` returns the batch root, the tip's proof and
+whether it checks out. Anyone can also call `verifyInBatch(hash, root, proof)` on the contract. For
+the Bitcoin backup, download `root` and `.ots` from the links in the response, then:
+
+```bash
+pip install opentimestamps-client
+ots upgrade root.bin.ots
+ots verify root.bin.ots
+```
+
+The contract gained `recordBatch`, `verifyInBatch`, `isBatchRecorded`, `getBatch` and
+`getBatchCount`, so deploy this version (it is a new contract; Base hasn't been deployed to yet).

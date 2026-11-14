@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { signUpVenue, type SignupState } from "./actions";
 
@@ -63,7 +64,10 @@ export function SignupForm({ referralCode }: { referralCode: string }) {
       <button disabled={pending} className="rounded-full bg-ink px-6 py-3.5 font-semibold text-white disabled:opacity-60">
         {pending ? "Setting up your venue…" : "Start my free 30-day pilot"}
       </button>
-      <p className="text-center text-xs text-ink/50">No card needed for the pilot. You choose a plan before day 30.</p>
+      <p className="text-center text-xs text-ink/50">
+        No card needed for the pilot. You choose a plan before day 30. By signing up you agree to our{" "}
+        <Link href="/terms" className="underline">terms</Link> and <Link href="/privacy" className="underline">privacy notice</Link>.
+      </p>
     </form>
   );
 }
