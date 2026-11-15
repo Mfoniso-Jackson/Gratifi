@@ -33,12 +33,26 @@ mode skips Stripe, and "Set up payouts" marks the venue as connected straight aw
 
 ## Refunds and disputes
 
-With destination charges, the platform account (GratiFi) is charged for refunds and disputes first.
+With destination charges, Stripe takes refunds and disputes from GratiFi's platform balance first.
+The webhook moves the money back from the venue automatically (`lib/payouts/ReversalService.ts`):
 
-- **Refunds:** refund from the GratiFi dashboard and tick **Reverse transfer** (and **Refund
-  application fee**) so the money comes back from the venue, not from GratiFi.
-- **Disputes:** Stripe debits GratiFi. Reverse the transfer from the venue's account in the dashboard
-  if the dispute is lost. Automating this is a follow-up.
+| Event | What happens |
+| --- | --- |
+| `charge.refunded` | The refunded amount is reversed from the venue's transfer. Partial refunds reverse only the new part. If "Reverse transfer" was already ticked in the dashboard, nothing more is taken. |
+| `charge.dispute.created` | The disputed amount is held back from the venue, since Stripe debits GratiFi at once. |
+| `charge.dispute.closed`, won | Stripe returns the funds to GratiFi, so the held amount is paid back to the venue. |
+| `charge.dispute.closed`, lost | Nothing more; the amount stays reversed. |
+
+- Every reversal and repayment uses an idempotency key, so a resent event never moves money twice.
+  Each one is logged in `payment_adjustments` (migration 015).
+- GratiFi's application fee is not refunded. Stripe keeps its card fee on a refund, and the application
+  fee covers it, so the venue absorbs the card fee here too and GratiFi doesn't lose money.
+- If a reversal fails (for example the venue's balance is too low), the webhook returns an error and
+  Stripe retries it.
+- Stripe's dispute fee is charged to GratiFi and is not passed on to the venue yet. Decide whether to
+  charge it to the venue before disputes become common.
+
+To refund a tip, refund it in the GratiFi Stripe dashboard as usual; the reversal happens by itself.
 
 ## Fees for GratiFi
 

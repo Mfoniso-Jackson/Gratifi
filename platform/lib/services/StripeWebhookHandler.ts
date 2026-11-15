@@ -4,6 +4,7 @@ import { saveSubscription } from "@/lib/billing/BillingService";
 import { applySponsorInvoiceEvent } from "@/lib/sponsors/InvoiceService";
 import { tipFromSession } from "@/lib/payments/fees";
 import { applyAccountUpdate } from "@/lib/payouts/ConnectService";
+import { reverseDispute, reverseRefund, returnWonDispute, type Adjustment } from "@/lib/payouts/ReversalService";
 
 /**
  * Applies a verified Stripe event to GratiFi's records.
@@ -14,18 +15,21 @@ import { applyAccountUpdate } from "@/lib/payouts/ConnectService";
  * - customer.subscription.created/updated/deleted: keeps venue_subscriptions in step with Stripe Billing.
  *
  * Refunded or disputed tips stay in the ledger and on-chain (the chain record cannot be removed),
- * but they are excluded from tip totals.
+ * but they are excluded from tip totals. With Stripe configured, refunds and disputes also move the
+ * money back from the venue's Stripe account (lib/payouts/ReversalService.ts).
  */
 export interface WebhookDeps {
   db: any;
   createRecognition: (payload: RecognitionPayload) => Promise<unknown>;
   /** Present only while the Dream Fund is switched on. */
   applyDreamTip?: (input: { workerId: string; amountPence: number; recognitionId: string | null }) => Promise<unknown>;
+  /** Present when Stripe is configured: moves money back from venues after refunds and disputes. */
+  stripe?: Stripe;
 }
 
 export type WebhookOutcome =
   | { action: "recognition_created" }
-  | { action: "status_updated"; paymentIntentId: string; stripeStatus: string }
+  | { action: "status_updated"; paymentIntentId: string; stripeStatus: string; adjustment?: Adjustment }
   | { action: "subscription_saved"; subscriptionId: string }
   | { action: "sponsor_invoice_updated"; invoiceId: string }
   | { action: "venue_payouts_updated"; accountId: string }
@@ -50,6 +54,10 @@ async function setStripeStatus(db: any, intentId: string, stripeStatus: string):
     return { action: "ignored", reason: `No recognition for payment ${intentId}` };
   }
   return { action: "status_updated", paymentIntentId: intentId, stripeStatus };
+}
+
+function withAdjustment(outcome: WebhookOutcome, adjustment: Adjustment): WebhookOutcome {
+  return adjustment && outcome.action === "status_updated" ? { ...outcome, adjustment } : outcome;
 }
 
 export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps): Promise<WebhookOutcome> {
@@ -90,21 +98,25 @@ export async function handleStripeEvent(event: Stripe.Event, deps: WebhookDeps):
       const intentId = paymentIntentId(charge.payment_intent as string | Stripe.PaymentIntent | null);
       if (!intentId) return { action: "ignored", reason: "Refunded charge has no payment intent" };
       const full = charge.amount_refunded >= charge.amount;
-      return setStripeStatus(deps.db, intentId, full ? "refunded" : "partially_refunded");
+      const outcome = await setStripeStatus(deps.db, intentId, full ? "refunded" : "partially_refunded");
+      return withAdjustment(outcome, deps.stripe ? await reverseRefund(deps.stripe, deps.db, charge) : null);
     }
 
     case "charge.dispute.created": {
       const dispute = event.data.object as Stripe.Dispute;
       const intentId = paymentIntentId(dispute.payment_intent as string | Stripe.PaymentIntent | null);
       if (!intentId) return { action: "ignored", reason: "Dispute has no payment intent" };
-      return setStripeStatus(deps.db, intentId, "disputed");
+      const outcome = await setStripeStatus(deps.db, intentId, "disputed");
+      return withAdjustment(outcome, deps.stripe ? await reverseDispute(deps.stripe, deps.db, dispute) : null);
     }
 
     case "charge.dispute.closed": {
       const dispute = event.data.object as Stripe.Dispute;
       const intentId = paymentIntentId(dispute.payment_intent as string | Stripe.PaymentIntent | null);
       if (!intentId) return { action: "ignored", reason: "Dispute has no payment intent" };
-      return setStripeStatus(deps.db, intentId, dispute.status === "won" ? "dispute_won" : "dispute_lost");
+      const won = dispute.status === "won";
+      const outcome = await setStripeStatus(deps.db, intentId, won ? "dispute_won" : "dispute_lost");
+      return withAdjustment(outcome, won && deps.stripe ? await returnWonDispute(deps.stripe, deps.db, dispute) : null);
     }
 
     case "customer.subscription.created":

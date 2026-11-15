@@ -29,7 +29,7 @@ The webhook handler:
 4. Stores and anchors the recognition.
 5. Marks failed chain writes as `retry`.
 
-Refunds and disputes update the recognition's `stripe_status` (`refunded`, `partially_refunded`, `disputed`, `dispute_won`, `dispute_lost`). The record stays in the ledger and on-chain, but refunded, partially refunded, disputed and lost tips no longer count toward tip totals.
+Refunds and disputes update the recognition's `stripe_status` (`refunded`, `partially_refunded`, `disputed`, `dispute_won`, `dispute_lost`). The record stays in the ledger and on-chain, but refunded, partially refunded, disputed and lost tips no longer count toward tip totals. With `STRIPE_SECRET_KEY` set, the same events move the money back from the venue's Stripe account and log it in `payment_adjustments`; see `docs/stripe-connect.md`.
 
 A request with a missing or invalid signature gets a 400 response and changes nothing.
 
