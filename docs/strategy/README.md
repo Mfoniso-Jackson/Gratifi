@@ -6,14 +6,22 @@ and hired. Tipping in UK venues is the wedge, not the destination.
 The full strategy documents (Path to Unicorn, Pilot Launch Plan, AI Playbook, and Blockchain and
 Web3 Playbook) are kept privately by the owner; this page is the summary the code follows.
 
+**What customers want:** [customer-assumptions.md](customer-assumptions.md) lists what tippers, staff
+and owners want, the evidence, and how the pilot tests each assumption. The riskiest: owners paying
+for recognition.
+
+**The competition:** [competition.md](competition.md). QR and NFC tipping is already crowded and
+funded (Strikepay, TiPJAR, EasyTip, card machines). GratiFi competes on recognition and keeping
+staff, not on the tip itself.
+
 ## The stages
 
 | Stage | Years | What it proves | Gate to the next stage |
 | --- | --- | --- | --- |
 | 1. Prove the UK | 1 | 3-venue pilot, then 50 paying venues | Owners pay; staff read their notes weekly |
-| 2. UK and Ireland | 1 to 2 | 500 venues; first till or rota software partner | Sales repeat without the founder |
+| 2. Deepen the UK | 1 to 2 | 500 venues; first till or rota software partner | Sales repeat without the founder |
 | 3. Enter the US | 2 to 4 | A US lighthouse city; worker accounts | Strong, repeatable US growth |
-| 4. Global platform | 4 to 7 | Canada, Australia, Europe via partners; hiring and worker money tools | Several revenue streams at global scale |
+| 4. Global platform | 4 to 7 | Ireland, Canada, Australia, Europe via partners; hiring and worker money tools | Several revenue streams at global scale |
 
 **We are in stage 1.** Feature freeze until the pilot has 30 days of data (decision on 31 December
 2026). Code changes are fixes for what the test run and pilot venues turn up.

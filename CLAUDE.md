@@ -1,7 +1,11 @@
 # GratiFi: guidance for every session
 
 Read [`docs/strategy/README.md`](docs/strategy/README.md) first. It sets the direction for all
-work in this repository.
+work in this repository. [`docs/strategy/customer-assumptions.md`](docs/strategy/customer-assumptions.md)
+says what tippers, staff and owners want, and which assumptions the pilot is testing; check new work
+against it. [`docs/strategy/competition.md`](docs/strategy/competition.md) explains why QR and NFC
+tipping alone isn't a reason to choose GratiFi: new work should strengthen recognition (notes,
+manager insight, a record staff keep), not copy what Strikepay, TiPJAR or card machines already do.
 
 ## What GratiFi is and where it's going
 
@@ -9,8 +13,9 @@ GratiFi lets customers thank the people who served them with a tip and a note, b
 with no app. Tips are paid to the venue's own Stripe account (Stripe Connect) and passed to staff
 through payroll. Each tip gets a salted, permanent record on Base, backed up on Bitcoin.
 
-The goal is a global platform where frontline workers get paid, recognised and hired: UK first, then
-Ireland, the US, Canada, Australia and Europe. The worker account that moves with people between jobs
+The goal is a global platform where frontline workers get paid, recognised and hired: UK first and deep,
+then the US, then Ireland, Canada, Australia and Europe (Ireland comes later because it's the home market
+of Strikepay, an established rival). The worker account that moves with people between jobs
 is the long-term product.
 
 ## Current stage: 1, prove the UK
@@ -36,6 +41,10 @@ is the long-term product.
    between venues later.
 6. **Sponsors and the Dream Fund stay switched off** (`GRATIFI_SPONSORS_ENABLED`) until the legal
    review clears them.
+7. **Never pressure people to tip.** No pop-ups, no pre-selected tip, no reminders, nothing at the
+   card machine. Notes are an invitation and tips are optional; customers resent tip prompts.
+8. **Lead with the person.** Customers want to thank whoever served them, so staff badges and staff
+   pages come first; venue-wide pages are the fallback.
 
 ## Engineering rules
 
