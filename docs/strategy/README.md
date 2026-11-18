@@ -10,6 +10,10 @@ Web3 Playbook) are kept privately by the owner; this page is the summary the cod
 and owners want, the evidence, and how the pilot tests each assumption. The riskiest: owners paying
 for recognition.
 
+**The competition:** [competition.md](competition.md). QR and NFC tipping is already crowded and
+funded (Strikepay, TiPJAR, EasyTip, card machines). GratiFi competes on recognition and keeping
+staff, not on the tip itself.
+
 ## The stages
 
 | Stage | Years | What it proves | Gate to the next stage |

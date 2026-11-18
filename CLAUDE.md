@@ -3,7 +3,9 @@
 Read [`docs/strategy/README.md`](docs/strategy/README.md) first. It sets the direction for all
 work in this repository. [`docs/strategy/customer-assumptions.md`](docs/strategy/customer-assumptions.md)
 says what tippers, staff and owners want, and which assumptions the pilot is testing; check new work
-against it.
+against it. [`docs/strategy/competition.md`](docs/strategy/competition.md) explains why QR and NFC
+tipping alone isn't a reason to choose GratiFi: new work should strengthen recognition (notes,
+manager insight, a record staff keep), not copy what Strikepay, TiPJAR or card machines already do.
 
 ## What GratiFi is and where it's going
 
