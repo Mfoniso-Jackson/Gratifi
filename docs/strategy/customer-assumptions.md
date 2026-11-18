@@ -20,7 +20,7 @@ and to trust that the money reaches that person.
 | --- | --- | --- | --- |
 | They want to tip the specific person who served them | High | RSM UK (Jan 2026, 2,000 people): 36% want tips to go to the staff who served their table and 57% to waiting staff; only 24% say share with all staff including chefs and managers | Compare tips via staff badges with tips via the venue page |
 | They doubt digital tips reach staff | Medium | CintSnap poll: 53% of UK respondents worried digital tips don't reach the intended person (small sample, date unclear) | Ask in short customer chats; watch whether a trust line changes tip rates |
-| Cash still matters, and many skip tipping when they have no cash | Medium | Which? (Jan 2025): cash still dominates UK tipping. A Post Office study: 80% have skipped a tip when only digital was possible (date unclear) | Ask venues how much cash tipping they see; compare GratiFi tips to the cash jar |
+| Cash still matters, and many skip tipping when they have no cash | Medium | Which? (Jan 2025): cash still dominates UK tipping. Post Office survey (Oct 2025, 2,000 adults): 58% prefer to tip in cash and 80% have skipped a tip when only digital was possible (commissioned by a cash provider) | Ask venues how much cash tipping they see; compare GratiFi tips to the cash jar |
 | They resent pressure to tip | High (US and France), thin for the UK | US: nearly 9 in 10 say tipping is out of control (WalletHub); 4 in 10 avoid businesses over tip prompts (Omni, Feb 2026). France: 60% feel pressured by card-machine prompts (IntoTheMinds, May 2026) | Any complaints about cards or badges; staff feedback on how customers react |
 | They'll write a note if asked warmly | Low | Our hypothesis; the note is the part no card machine offers | Share of tips with a note (target over 50%) |
 | They won't install an app or make an account | High | Common to every tipping product; GratiFi already needs neither | Drop-off between scan and payment |
@@ -119,7 +119,7 @@ treat figures as signals, not facts.
 - [RSM UK survey via Restaurant Online (Jan 2026)](https://www.restaurantonline.co.uk/Article/2026/01/12/diners-believe-tips-should-go-to-waiting-staff-alone/)
 - [Which? tipping survey](https://www.which.co.uk/policy-and-insight/article/new-which-survey-exposes-uks-tipping-habits-as-one-in-five-admit-they-didnt-tip-after-a-meal-out-in-last-12-months-a2sFr5M9y3vn)
 - [CintSnap: tipping culture US vs UK](https://cint.com/blog/cintsnap-unveils-the-divide-tipping-culture-in-the-us-vs-uk)
-- [Your Money: most Brits still prefer to tip in cash (Post Office study)](https://www.yourmoney.com/household-bills/most-brits-still-prefer-to-tip-in-cash/)
+- [Post Office: millions of Brits would rather skip tipping than tip via card (Oct 2025)](https://www.mynewsdesk.com/uk/post-office/pressreleases/millions-of-brits-would-rather-skip-tipping-than-tip-via-card-3413516)
 - [Morning Advertiser: hospitality staff churn and training costs (May 2026)](https://www.morningadvertiser.co.uk/Article/2026/05/29/only-1-in-4-staff-remain-in-work-after-90-days-training-costs-up-70/)
 - [Caterer Licensee: turnover drops (Pineapple and Sona report)](https://catererlicensee.com/hospitality-staff-turnover-drops-by-close-to-10/)
 - [CIPD: benchmarking employee turnover](https://prod.cipd.org/uk/views-and-insights/thought-leadership/cipd-voice/benchmarking-employee-turnover/)

@@ -74,9 +74,8 @@ secondary:
    are gold.
 4. **Faster pay to staff is a decision to take after the pilot.** Direct payouts to staff (option B)
    are the norm for Strikepay. Revisit option B for self-employed staff first.
-5. **Revisit the country order.** Ireland is Strikepay's home market. The global plan should test
-   whether the US (where tip volumes are larger and recognition-led tipping is less crowded than
-   payouts) or the UK depth comes before Ireland.
+5. **The country order has changed.** Ireland is Strikepay's home market, so the plan is now: UK
+   first, then a deeper UK, then the US, with Ireland after that (see the strategy README).
 6. **Partner rather than fight on the till.** Card machines own the payment moment; GratiFi should
    live where they don't reach (staff badges, rooms, chairs) and later integrate with them.
 
