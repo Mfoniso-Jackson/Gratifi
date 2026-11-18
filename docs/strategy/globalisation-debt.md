@@ -1,7 +1,7 @@
 # Globalisation debt
 
 Places where the code assumes the UK. None block the UK pilot, so they're **listed, not fixed**,
-during the feature freeze. Fix them when Ireland (stage 2) or the US (stage 3) needs them, and
+during the feature freeze. Fix them when the US (stage 3) or Ireland needs them, and
 don't add new ones.
 
 Paths are under `platform/`.
@@ -21,5 +21,5 @@ Paths are under `platform/`.
 | Language | All pages | English only | Translations once a non-English market is chosen |
 | Staff belong to one venue | `workers.venue_id` | A worker exists only inside one venue | A person-level worker account linked to many venues (the stage 3 worker account) |
 
-**Cheapest first step when stage 2 starts:** add `country` and `currency` to `venues`, defaulting
+**Cheapest first step before going abroad:** add `country` and `currency` to `venues`, defaulting
 to `GB` and `GBP`, and read them everywhere listed above.
