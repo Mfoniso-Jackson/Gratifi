@@ -13,8 +13,9 @@ GratiFi lets customers thank the people who served them with a tip and a note, b
 with no app. Tips are paid to the venue's own Stripe account (Stripe Connect) and passed to staff
 through payroll. Each tip gets a salted, permanent record on Base, backed up on Bitcoin.
 
-The goal is a global platform where frontline workers get paid, recognised and hired: UK first, then
-Ireland, the US, Canada, Australia and Europe. The worker account that moves with people between jobs
+The goal is a global platform where frontline workers get paid, recognised and hired: UK first and deep,
+then the US, then Ireland, Canada, Australia and Europe (Ireland comes later because it's the home market
+of Strikepay, an established rival). The worker account that moves with people between jobs
 is the long-term product.
 
 ## Current stage: 1, prove the UK
