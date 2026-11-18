@@ -6,6 +6,10 @@ and hired. Tipping in UK venues is the wedge, not the destination.
 The full strategy documents (Path to Unicorn, Pilot Launch Plan, AI Playbook, and Blockchain and
 Web3 Playbook) are kept privately by the owner; this page is the summary the code follows.
 
+**What customers want:** [customer-assumptions.md](customer-assumptions.md) lists what tippers, staff
+and owners want, the evidence, and how the pilot tests each assumption. The riskiest: owners paying
+for recognition.
+
 ## The stages
 
 | Stage | Years | What it proves | Gate to the next stage |

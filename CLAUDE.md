@@ -1,7 +1,9 @@
 # GratiFi: guidance for every session
 
 Read [`docs/strategy/README.md`](docs/strategy/README.md) first. It sets the direction for all
-work in this repository.
+work in this repository. [`docs/strategy/customer-assumptions.md`](docs/strategy/customer-assumptions.md)
+says what tippers, staff and owners want, and which assumptions the pilot is testing; check new work
+against it.
 
 ## What GratiFi is and where it's going
 
@@ -36,6 +38,10 @@ is the long-term product.
    between venues later.
 6. **Sponsors and the Dream Fund stay switched off** (`GRATIFI_SPONSORS_ENABLED`) until the legal
    review clears them.
+7. **Never pressure people to tip.** No pop-ups, no pre-selected tip, no reminders, nothing at the
+   card machine. Notes are an invitation and tips are optional; customers resent tip prompts.
+8. **Lead with the person.** Customers want to thank whoever served them, so staff badges and staff
+   pages come first; venue-wide pages are the fallback.
 
 ## Engineering rules
 
